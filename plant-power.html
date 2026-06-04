@@ -1310,7 +1310,18 @@ function selectChar(el){document.querySelectorAll('#screen-onboard .char-card').
 // ================================================================
 function startJourney(){if(!selectedChar)return;state.char=selectedChar;state.streak=0;state.bestStreak=0;state.totalMeals=0;state.todayMeals=0;state.lastLogDate=null;state.lastLogTime=null;state.shownLevels=[];state.foodBank=state.foodBank||[];saveState();showDashboard();}
 function showDashboard(){document.getElementById('screen-onboard').classList.remove('active');document.getElementById('screen-main').classList.add('active');checkDayReset();updateDashboard();updateReminderUI();scheduleReminderFromState();if(typeof renderProteinSlots==='function')renderProteinSlots();}
-function checkDayReset(){const today=todayStr();if(state.lastLogDate&&state.lastLogDate!==today){const diff=(new Date(today)-new Date(state.lastLogDate))/86400000;state.todayMeals=0;if(diff>1)state.streak=0;saveState();}}
+function checkDayReset(){
+  // Handles the edge case where the app stays open past midnight
+  const today=todayStr();
+  const lastActive=state.lastLogDate||(state.proteinLog&&state.proteinLog._date)||null;
+  if(lastActive && lastActive!==today){
+    const diff=(new Date(today)-new Date(lastActive))/86400000;
+    state.todayMeals=0;
+    state.proteinLog={_date:today,total:0};
+    if(diff>1) state.streak=0;
+    saveState();
+  }
+}
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function updateDashboard(){
   const lv=getLevelInfo(state.streak);
@@ -1327,7 +1338,6 @@ function updateDashboard(){
   const moods=['Ready to get nourished','Feeling powered up','Plant strong today','Growing stronger','On a roll today'];
   document.getElementById('char-mood').textContent=moods[Math.min(state.todayMeals,4)];
   for(let i=0;i<5;i++){const slot=document.getElementById('slot-'+i),svg=document.getElementById('slot-svg-'+i);if(i<state.todayMeals){slot.classList.add('filled');svg.innerHTML=slotFilledSVG();}else{slot.classList.remove('filled');svg.innerHTML=slotEmptySVG();}}
-  document.getElementById('stat-total-meals').textContent=state.totalMeals;
   document.getElementById('stat-best-streak').textContent=state.bestStreak;
   if(typeof updateProteinRing==='function')updateProteinRing();
 }
@@ -1483,12 +1493,49 @@ function cancelChangeChar(){openChangeChar();}
 // INIT
 // ================================================================
 async function init(){
-  await openDB();await loadState();
-  if(!state.foodBank)state.foodBank=[];
-  if(!state.mealPlan)state.mealPlan={};
-  if(state.quietStart===undefined)state.quietStart=22;
-  if(state.quietEnd===undefined)state.quietEnd=7;
-  if(state.char)showDashboard();
+  await openDB();
+  await loadState();
+
+  const today = todayStr();
+
+  // ── Defaults for fields that may not exist in older saved state ──
+  if(!state.foodBank) state.foodBank=[];
+  if(!state.mealPlan) state.mealPlan={};
+  if(state.quietStart===undefined) state.quietStart=22;
+  if(state.quietEnd===undefined) state.quietEnd=7;
+
+  // ── Protein goal: restore from DB, never reset on load ──
+  // Only set default if truly missing from saved state
+  if(state.proteinGoal===undefined || state.proteinGoal===null || isNaN(parseInt(state.proteinGoal))){
+    state.proteinGoal=120;
+  } else {
+    state.proteinGoal=parseInt(state.proteinGoal);
+  }
+
+  // ── Daily reset logic ──
+  const lastActive = state.lastLogDate || (state.proteinLog && state.proteinLog._date) || null;
+
+  if(lastActive && lastActive !== today){
+    // New day — reset daily trackers
+    const diff=(new Date(today)-new Date(lastActive))/86400000;
+    state.todayMeals=0;
+    state.proteinLog={_date:today, total:0};
+    if(diff>1) state.streak=0;
+    saveState();
+  } else if(!lastActive){
+    // First ever launch
+    state.proteinLog={_date:today, total:0};
+  } else {
+    // Same day — restore protein log as-is, just ensure structure is valid
+    if(!state.proteinLog || !state.proteinLog._date){
+      state.proteinLog={_date:today, total:0};
+    }
+    if(typeof state.proteinLog.total !== 'number'){
+      state.proteinLog.total = parseInt(state.proteinLog.total)||0;
+    }
+  }
+
+  if(state.char) showDashboard();
   setInterval(function(){if(state._notifHandle)updateReminderNextLabel(state.lastLogTime?state.lastLogTime+getReminderMs():null);},60000);
 }
 
@@ -1802,12 +1849,12 @@ function runProteinCalc(){
 }
 
 function applyProteinGoal(){
-  if(!calcResult)return;
-  state.proteinGoal=calcResult;
+  if(!calcResult) return;
+  state.proteinGoal = parseInt(calcResult);
   saveState();
   closeModal('modal-protein-calc');
   updateProteinRing();
-  showToast('Daily goal set to '+calcResult+'g');
+  showToast('Daily goal set to '+state.proteinGoal+'g');
 }
 
 init();
