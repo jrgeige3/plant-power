@@ -261,7 +261,27 @@ body{
 .bank-card{background:var(--cream);border-radius:14px;padding:12px 14px;position:relative;}
 .bank-card-title{font-size:14px;font-weight:900;color:var(--terra-dark);margin-bottom:5px;padding-right:50px;}
 .bank-card-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
-.bank-remove-btn{position:absolute;top:10px;right:10px;background:var(--cream2);border:none;border-radius:8px;padding:4px 8px;font-family:var(--font);font-size:11px;font-weight:800;color:var(--text-muted);cursor:pointer;}
+.fb-ingredients-list{display:flex;flex-direction:column;gap:4px;margin-bottom:8px;}
+.fb-ingredient-row{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:#fff;border-radius:8px;}
+.fb-ingredient-name{font-size:12px;color:var(--text-main);font-weight:600;flex:1;padding-right:8px;}
+.fb-ingredient-protein{font-size:11px;font-weight:800;color:var(--sage-dark);background:rgba(90,138,72,0.1);border-radius:6px;padding:3px 7px;cursor:pointer;display:flex;align-items:center;flex-shrink:0;}
+.fb-ingredient-protein:active{transform:scale(0.95);}
+.ring-stage-row{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;}
+.ring-pm-btn{width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;box-shadow:0 2px 8px var(--shadow);}
+.ring-minus-btn{background:#fff;color:var(--terra);}
+.ring-minus-btn:active{transform:scale(0.92);background:var(--cream2);}
+.ring-plus-btn{background:var(--sage-dark);color:#fff;}
+.ring-plus-btn:active{transform:scale(0.92);}
+/* serving editor in food bank */
+.fb-serving-row{display:flex;align-items:center;gap:8px;margin:8px 0 4px;}
+.fb-serving-label{font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;}
+.fb-serving-input{width:80px;padding:5px 8px;border:2px solid var(--cream2);border-radius:9px;font-family:var(--font);font-size:13px;font-weight:800;color:var(--text-main);background:var(--cream);text-align:center;outline:none;}
+.fb-serving-input:focus{border-color:var(--sage-dark);}
+.fb-serving-base{font-size:11px;color:var(--text-muted);font-weight:600;}
+.fb-serving-total{font-size:12px;color:var(--text-muted);font-weight:700;margin-left:4px;}
+.fb-serving-total strong{color:var(--sage-dark);}
+.editable-chip{cursor:pointer;display:inline-flex;align-items:center;transition:all 0.15s;}
+.editable-chip:active{transform:scale(0.96);background:var(--sage-light)!important;}
 .bank-expand-btn{background:none;border:none;font-family:var(--font);font-size:12px;font-weight:800;color:var(--sage-dark);cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:4px;}
 .fb-empty-cat{padding:14px;text-align:center;font-size:13px;color:var(--text-muted);font-weight:600;}
 .bank-card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 10px var(--shadow);position:relative;}
@@ -521,26 +541,32 @@ body{
       </div>
       <!-- Character Stage with Protein Ring -->
       <div class="protein-ring-stage" id="char-stage">
-        <!-- Protein progress ring + character -->
-        <div class="ring-wrap">
-          <svg class="protein-ring-svg" id="protein-ring-svg" viewBox="0 0 260 260">
-            <!-- Track ring -->
-            <circle cx="130" cy="130" r="114" fill="none" stroke="#E8DFD0" stroke-width="12"/>
-            <!-- Progress ring (animated via JS) -->
-            <circle id="protein-ring-progress" cx="130" cy="130" r="114"
-              fill="none" stroke="#7AB863" stroke-width="12"
-              stroke-linecap="round"
-              stroke-dasharray="716" stroke-dashoffset="716"
-              transform="rotate(-90 130 130)"/>
-          </svg>
-          <!-- Character sits inside the ring -->
-          <svg class="main-char-art" id="main-char-svg" viewBox="0 0 120 120"></svg>
-          <!-- Protein totals overlaid at bottom of ring -->
-          <div class="ring-protein-badge">
-            <span class="ring-protein-total" id="ring-protein-total">0g</span>
-            <span class="ring-protein-sep">/</span>
-            <span class="ring-protein-goal" id="ring-protein-goal">120g</span>
+        <!-- Protein progress ring + character, flanked by - and + buttons -->
+        <div class="ring-stage-row">
+          <!-- Minus button left -->
+          <button class="ring-pm-btn ring-minus-btn" onclick="quickAdjustProtein(-1)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <div class="ring-wrap">
+            <svg class="protein-ring-svg" id="protein-ring-svg" viewBox="0 0 260 260">
+              <circle cx="130" cy="130" r="114" fill="none" stroke="#E8DFD0" stroke-width="12"/>
+              <circle id="protein-ring-progress" cx="130" cy="130" r="114"
+                fill="none" stroke="#7AB863" stroke-width="12"
+                stroke-linecap="round"
+                stroke-dasharray="716" stroke-dashoffset="716"
+                transform="rotate(-90 130 130)"/>
+            </svg>
+            <svg class="main-char-art" id="main-char-svg" viewBox="0 0 120 120"></svg>
+            <div class="ring-protein-badge">
+              <span class="ring-protein-total" id="ring-protein-total">0g</span>
+              <span class="ring-protein-sep">/</span>
+              <span class="ring-protein-goal" id="ring-protein-goal">120g</span>
+            </div>
           </div>
+          <!-- Plus button right -->
+          <button class="ring-pm-btn ring-plus-btn" onclick="quickAdjustProtein(1)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         </div>
         <!-- Name + mood below ring -->
         <div class="char-stage-name" id="char-stage-name">—</div>
@@ -556,7 +582,6 @@ body{
             Goal: <span id="ring-goal-btn-label">120g</span>
           </button>
         </div>
-        <!-- Confetti + sparks layered on top but with pointer-events:none so they never block clicks -->
         <canvas class="stage-confetti" id="stage-confetti" style="pointer-events:none;"></canvas>
         <div class="spark-container" id="spark-container" style="pointer-events:none;"></div>
       </div>
@@ -621,47 +646,7 @@ body{
         </div>
       </div>
 
-      <!-- ── AI RECIPE GENERATOR ── -->
-      <div class="fb-section-title">Describe a Meal Idea</div>
-      <div class="ai-gen-card">
-        <div class="ai-gen-inner">
-          <textarea class="ai-gen-input" id="ai-gen-input" placeholder="e.g. a high-protein breakfast with chickpeas and tahini, quick under 10 mins" rows="3" maxlength="300"></textarea>
-          <div class="ai-gen-row">
-            <div>
-              <div class="rcb-label" style="margin-bottom:4px;">Category</div>
-              <div class="freq-row">
-                <button class="freq-btn" id="ai-cat-snack" onclick="setAiCategory('Snack')" style="font-size:12px;">Snack</button>
-                <button class="freq-btn selected" id="ai-cat-breakfast" onclick="setAiCategory('Breakfast')" style="font-size:12px;">Breakfast</button>
-                <button class="freq-btn" id="ai-cat-lunch" onclick="setAiCategory('Lunch/Dinner')" style="font-size:12px;">Lunch/Dinner</button>
-              </div>
-            </div>
-            <button class="ai-gen-btn" id="ai-gen-btn" onclick="generateAiRecipe()">Generate</button>
-          </div>
-        </div>
-        <div class="ai-loading hidden" id="ai-loading">
-          <div class="ai-loading-dots"><span></span><span></span><span></span></div>
-          <div class="ai-loading-text">Creating your recipe...</div>
-        </div>
-        <div class="ai-result hidden" id="ai-result">
-          <div class="ai-result-inner" id="ai-result-inner"></div>
-          <div class="ai-result-actions">
-            <button class="save-bank-btn" id="ai-save-btn" onclick="saveAiRecipe()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-              Save to Food Bank
-            </button>
-            <button class="ai-discard-btn" onclick="discardAiRecipe()">Start over</button>
-          </div>
-          <div class="ai-feedback-wrap">
-            <div class="ai-feedback-label">Not quite right? Ask for adjustments</div>
-            <div class="ai-feedback-row">
-              <textarea class="ai-feedback-input" id="ai-feedback-input" placeholder="e.g. make it spicier, swap the tofu for tempeh, reduce prep time" rows="2" maxlength="200"></textarea>
-              <button class="ai-refine-btn" id="ai-refine-btn" onclick="refineAiRecipe()">Refine</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── SAVED RECIPES BY CATEGORY ── -->
+            <!-- ── SAVED RECIPES BY CATEGORY ── -->
       <div class="fb-section-title">My Recipes</div>
       <div id="food-bank-categorized">
         <!-- Rendered by JS -->
@@ -1056,70 +1041,170 @@ function saveToFoodBank(){
   showToast('Saved to Food Bank!');
 }
 
+function calcRecipeProtein(r, mult){
+  mult = mult || r.servingMultiplier || 1;
+  if(r.ingredients && r.ingredients.length > 0 && typeof r.ingredients[0] === 'object'){
+    var total = 0;
+    r.ingredients.forEach(function(ing){ total += (ing.protein||0); });
+    return Math.round(total * mult);
+  }
+  return r.protein || 0;
+}
+
 function renderFoodBank(){
-  const CATS = [
-    {key:'Breakfast', color:'#F4C4A0', dot:'#E8907A'},
-    {key:'Lunch/Dinner', color:'#A8C8E8', dot:'#6A90D8'},
-    {key:'Snack', color:'#B8DCB0', dot:'#5A8A48'},
+  var CATS = [
+    {key:'Breakfast', dot:'#E8907A'},
+    {key:'Lunch/Dinner', dot:'#6A90D8'},
+    {key:'Snack', dot:'#5A8A48'}
   ];
-  const container = document.getElementById('food-bank-categorized');
+  var container = document.getElementById('food-bank-categorized');
   if(!container) return;
-  const fb = state.foodBank || [];
+  var fb = state.foodBank || [];
   if(fb.length === 0){
-    container.innerHTML = `<div class="food-bank-empty">
-      <svg class="food-bank-empty-icon" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" stroke="#D4C8B0" stroke-width="2"/><path d="M30 21l-7 5-7-5V12a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="#C8A87A" stroke-width="2" fill="none"/></svg>
-      <div class="food-bank-empty-text">No recipes saved yet.<br>Use the Picker or AI Generator above.</div>
-    </div>`;
+    container.innerHTML = '<div class="food-bank-empty"><svg class="food-bank-empty-icon" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" stroke="#D4C8B0" stroke-width="2"/><path d="M30 21l-7 5-7-5V12a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="#C8A87A" stroke-width="2" fill="none"/></svg><div class="food-bank-empty-text">No recipes saved yet.<br>Use the Protein Picker above.</div></div>';
     return;
   }
-  container.innerHTML = CATS.map(({key,color,dot})=>{
-    const items = fb.map((r,i)=>({...r,_i:i})).filter(r=>(r.category||'Snack')===key);
-    const isOpen = fbCatOpen[key];
-    const itemsHTML = items.length === 0
-      ? `<div class="fb-empty-cat">No ${key} recipes saved yet.</div>`
-      : items.map(r=>`<div class="bank-card">
-          <button class="bank-remove-btn" onclick="removeFromBank(${r._i})">Remove</button>
-          <div class="bank-card-title">${r.name}</div>
-          <div class="bank-card-meta"><span class="recipe-chip">${r.serving}</span><span class="recipe-chip">${r.protein}</span></div>
-          <button class="bank-expand-btn" onclick="toggleBankCard(${r._i},this)">
-            <svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg>
-            View recipe
-          </button>
-          <div id="bank-detail-${r._i}" style="display:none;margin-top:8px">
-            <div class="recipe-section-title">Ingredients</div>
-            <ul class="recipe-ingredients" style="margin-bottom:8px">${r.ingredients.map(i=>`<li>${i}</li>`).join('')}</ul>
-            <div class="recipe-section-title">Instructions</div>
-            <div class="recipe-instructions">${r.instructions.map((s,i)=>`<div class="recipe-step"><div class="step-num">${i+1}</div><div>${s}</div></div>`).join('')}</div>
-          </div>
-        </div>`).join('');
-    return `<div class="fb-category">
-      <div class="fb-cat-header" onclick="toggleFbCat('${key}')">
-        <div class="fb-cat-dot" style="background:${dot};"></div>
-        <div class="fb-cat-info">
-          <div class="fb-cat-name">${key}</div>
-          <div class="fb-cat-count">${items.length} recipe${items.length!==1?'s':''}</div>
-        </div>
-        <svg class="fb-cat-chevron${isOpen?' open':''}" viewBox="0 0 18 18" fill="none" stroke="#8A6E5A" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg>
-      </div>
-      <div class="fb-cat-body${isOpen?' open':''}">
-        <div class="fb-cat-items">${itemsHTML}</div>
-      </div>
-    </div>`;
-  }).join('');
+  var html = '';
+  CATS.forEach(function(cat){
+    var items = [];
+    fb.forEach(function(r,i){ if((r.category||'Snack')===cat.key) items.push(Object.assign({},r,{_i:i})); });
+    var isOpen = fbCatOpen[cat.key];
+    var itemsHTML = '';
+    if(items.length === 0){
+      itemsHTML = '<div class="fb-empty-cat">No '+cat.key+' recipes saved yet.</div>';
+    } else {
+      items.forEach(function(r){
+        // Calculate protein based on current serving vs base serving
+        var baseProtein = calcRecipeProtein(r, 1);
+        var baseServingNum = parseFloat(r.baseServing) || parseFloat(r.serving) || 1;
+        var currentServingNum = parseFloat(r.currentServing) || baseServingNum;
+        var ratio = baseServingNum > 0 ? currentServingNum / baseServingNum : 1;
+        var totalProt = Math.round(baseProtein * ratio);
+        var isObj = r.ingredients && r.ingredients.length > 0 && typeof r.ingredients[0] === 'object';
+
+        // Ingredients list (no serving row here)
+        var ingHTML = '';
+        if(isObj){
+          r.ingredients.forEach(function(ing,ii){
+            ingHTML += '<div class="fb-ingredient-row"><span class="fb-ingredient-name">'+ing.name+'</span>';
+            if(ing.protein !== undefined){
+              ingHTML += '<span class="fb-ingredient-protein editable-chip" onclick="editIngredientProtein('+r._i+','+ii+',this)">';
+              ingHTML += '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="opacity:0.5;margin-right:2px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+              ingHTML += ing.protein+'g</span>';
+            }
+            ingHTML += '</div>';
+          });
+        } else {
+          var arr = Array.isArray(r.ingredients) ? r.ingredients : [];
+          arr.forEach(function(ing){ ingHTML += '<div class="fb-ingredient-row"><span class="fb-ingredient-name">'+ing+'</span></div>'; });
+        }
+
+        var instrs = Array.isArray(r.instructions) ? r.instructions : [];
+
+        // Card header: name, then serving size + protein on same row
+        itemsHTML += '<div class="bank-card">';
+        itemsHTML += '<div class="bank-card-title">'+r.name+'</div>';
+        itemsHTML += '<div class="bank-card-meta">';
+        // Editable serving chip
+        itemsHTML += '<span class="recipe-chip editable-chip" onclick="editServingSize('+r._i+')" title="Tap to edit serving">';
+        itemsHTML += '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="opacity:0.5;margin-right:2px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+        itemsHTML += (r.currentServing ? r.currentServing+' '+(r.serving||'').replace(/[\d.]+/,'').trim() : r.serving)+'</span>';
+        // Auto-calculated protein chip
+        itemsHTML += '<span class="recipe-chip" style="background:rgba(90,138,72,0.12);color:var(--sage-dark);font-weight:900;" id="prot-chip-'+r._i+'">'+totalProt+'g protein</span>';
+        itemsHTML += '</div>';
+        itemsHTML += '<button class="bank-remove-btn" onclick="removeFromBank('+r._i+')">Remove</button>';
+        itemsHTML += '<button class="bank-expand-btn" onclick="toggleBankCard('+r._i+',this)">';
+        itemsHTML += '<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg> View recipe</button>';
+        itemsHTML += '<div id="bank-detail-'+r._i+'" style="display:none;margin-top:10px">';
+        itemsHTML += '<div class="recipe-section-title">Ingredients</div>';
+        itemsHTML += '<div class="fb-ingredients-list" style="margin-bottom:8px">'+ingHTML+'</div>';
+        itemsHTML += '<div class="recipe-section-title" style="margin-top:10px">Instructions</div>';
+        itemsHTML += '<div class="recipe-instructions">'+instrs.map(function(s,i){return '<div class="recipe-step"><div class="step-num">'+(i+1)+'</div><div>'+s+'</div></div>';}).join('')+'</div>';
+        itemsHTML += '</div></div>';
+      });
+    }
+    html += '<div class="fb-category"><div class="fb-cat-header" data-key="'+cat.key+'" onclick="toggleFbCat(this.dataset.key)">';
+    html += '<div class="fb-cat-dot" style="background:'+cat.dot+';"></div>';
+    html += '<div class="fb-cat-info"><div class="fb-cat-name">'+cat.key+'</div><div class="fb-cat-count">'+items.length+' recipe'+(items.length!==1?'s':'')+'</div></div>';
+    html += '<svg class="fb-cat-chevron'+(isOpen?' open':'')+'" viewBox="0 0 18 18" fill="none" stroke="#8A6E5A" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg></div>';
+    html += '<div class="fb-cat-body'+(isOpen?' open':'')+'"><div class="fb-cat-items">'+itemsHTML+'</div></div></div>';
+  });
+  container.innerHTML = html;
 }
 function removeFromBank(idx){state.foodBank.splice(idx,1);saveState();renderFoodBank();}
+
+function editBankField(idx, field, chipEl){
+  var current = state.foodBank[idx][field] || '';
+  var val = prompt(field === 'serving' ? 'Edit serving size:' : 'Edit protein:', current);
+  if(val === null) return;
+  val = val.trim();
+  if(!val) return;
+  state.foodBank[idx][field] = val;
+  saveState();
+  renderFoodBank();
+  showToast(field === 'serving' ? 'Serving updated' : 'Protein updated');
+}
+
+function editIngredientProtein(recipeIdx, ingIdx, el){
+  var current = state.foodBank[recipeIdx].ingredients[ingIdx].protein || 0;
+  var ingName = state.foodBank[recipeIdx].ingredients[ingIdx].name;
+  var val = prompt('Protein for "'+ingName+'" (grams):', current);
+  if(val === null) return;
+  var n = parseFloat(val);
+  if(isNaN(n) || n < 0) return;
+  state.foodBank[recipeIdx].ingredients[ingIdx].protein = n;
+  saveState();
+  // Re-render but keep this card's detail open
+  var openId = 'bank-detail-'+recipeIdx;
+  renderFoodBank();
+  var detail = document.getElementById(openId);
+  if(detail){ detail.style.display='block'; }
+  showToast('Ingredient protein updated');
+}
+
+function editServingSize(recipeIdx){
+  var r = state.foodBank[recipeIdx];
+  var current = r.currentServing || parseFloat(r.serving) || 1;
+  var unit = (r.serving||'serving').replace(/[\d.]+/,'').trim();
+  var val = prompt('Enter serving size ('+unit+'):', current);
+  if(val === null) return;
+  var n = parseFloat(val);
+  if(isNaN(n) || n <= 0) return;
+  if(!r.baseServing) r.baseServing = parseFloat(r.serving) || 1;
+  r.currentServing = n;
+  saveState();
+  // Re-render but keep this card's detail open
+  var openId = 'bank-detail-'+recipeIdx;
+  renderFoodBank();
+  var detail = document.getElementById(openId);
+  if(detail){ detail.style.display='block'; }
+  var baseP = calcRecipeProtein(r, 1);
+  var newP = Math.round(baseP * (n / r.baseServing));
+  showToast('Serving updated — '+newP+'g protein');
+}
+
+function quickAdjustProtein(delta){
+  var today = todayStr();
+  if(!state.proteinLog || !state.proteinLog._date) state.proteinLog = {_date:today, total:0};
+  var newTotal = Math.max(0, (parseInt(state.proteinLog.total)||0) + delta);
+  state.proteinLog.total = newTotal;
+  saveState();
+  updateProteinRing();
+  showToast(delta > 0 ? '+'+Math.abs(delta)+'g added' : '-'+Math.abs(delta)+'g removed');
+}
+
 function toggleBankCard(idx,btn){
   const el=document.getElementById('bank-detail-'+idx);
   if(!el)return;
   const open=el.style.display==='block';
   el.style.display=open?'none':'block';
   btn.innerHTML=open
-    ?`<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg> View recipe`
-    :`<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 12L9 7L14 12"/></svg> Hide recipe`;
+    ?'<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg> View recipe'
+    :'<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 12L9 7L14 12"/></svg> Hide recipe';
 }
 
-// ── Food Bank category accordion state ──────────────────────────────────
-const fbCatOpen = {'Breakfast':false,'Lunch/Dinner':false,'Snack':true};
+// All category accordions closed by default when visiting Food Bank
+const fbCatOpen = {'Breakfast':false,'Lunch/Dinner':false,'Snack':false};
 function toggleFbCat(key){
   fbCatOpen[key]=!fbCatOpen[key];
   renderFoodBank();
@@ -1322,7 +1407,13 @@ function checkDayReset(){
     saveState();
   }
 }
-function todayStr(){return new Date().toISOString().split('T')[0];}
+function todayStr(){
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
 function updateDashboard(){
   const lv=getLevelInfo(state.streak);
   document.getElementById('streak-num').textContent=state.streak;
@@ -1500,6 +1591,41 @@ async function init(){
 
   // ── Defaults for fields that may not exist in older saved state ──
   if(!state.foodBank) state.foodBank=[];
+
+  // Migrate old string-based ingredients to object structure
+  state.foodBank.forEach(function(r){
+    if(r.ingredients && r.ingredients.length > 0 && typeof r.ingredients[0] === 'string'){
+      r.ingredients = r.ingredients.map(function(ing){ return {name:ing}; });
+    }
+    if(r.servingMultiplier === undefined) r.servingMultiplier = 1;
+  });
+
+  // Update pre-loaded recipes to latest structure with ingredient protein values
+  var preloadedNames = ['Soy Milk Latte','Golden Soy Milk Latte','NuGo Protein Bar','TVP Tacos'];
+  var needsUpdate = state.foodBank.length === 0 || state.foodBank.some(function(r){
+    return preloadedNames.indexOf(r.name) !== -1 &&
+           r.ingredients && r.ingredients.length > 0 &&
+           r.ingredients[0].protein === undefined;
+  });
+  if(needsUpdate){
+    state.foodBank = state.foodBank.filter(function(r){ return preloadedNames.indexOf(r.name) === -1; });
+    var freshRecipes = [
+      {name:'Soy Milk Latte',category:'Snack',serving:'8 oz',servingMultiplier:1,
+       ingredients:[{name:'8 oz Weslife Smoothie Blend soy milk',protein:16},{name:'1-2 shots espresso (or 1/2 cup strong brewed coffee)'},{name:'Sweetener to taste (optional)'}],
+       instructions:['Heat the Weslife Smoothie Blend soy milk until steaming — do not boil.','Froth using a milk frother or whisk vigorously.','Pull espresso shots or brew strong coffee.','Pour espresso into your mug, top with frothed soy milk.','Sweeten to taste if desired.']},
+      {name:'Golden Soy Milk Latte',category:'Snack',serving:'8 oz',servingMultiplier:1,
+       ingredients:[{name:'8 oz Weslife Smoothie Blend soy milk',protein:16},{name:'1/2 tsp turmeric'},{name:'1/4 tsp cinnamon'},{name:'1/4 tsp ginger'},{name:'Pinch of black pepper'},{name:'Sweetener to taste (optional)'}],
+       instructions:['Add turmeric, cinnamon, ginger, and black pepper to a small saucepan.','Pour in the Weslife Smoothie Blend soy milk.','Heat over medium, stirring until steaming — do not boil.','Froth if desired and pour into your mug.','Sweeten to taste if desired.']},
+      {name:'NuGo Protein Bar',category:'Snack',serving:'1 bar',servingMultiplier:1,
+       ingredients:[{name:'1 NuGo Protein Bar (flavor of choice)',protein:12}],
+       instructions:['Grab a NuGo Protein Bar from your stash.','Enjoy as a quick on-the-go snack.','Pairs well with a glass of water or your soy milk latte.']},
+      {name:'TVP Tacos',category:'Lunch/Dinner',serving:'2 tacos',servingMultiplier:1,
+       ingredients:[{name:'1/2 cup dry TVP (textured vegetable protein)',protein:18},{name:'4 small corn or flour tortillas',protein:4},{name:'1/2 cup vegetable broth or hot water'},{name:'1 tsp olive oil'},{name:'1/2 tsp cumin'},{name:'1/2 tsp smoked paprika'},{name:'1/2 tsp garlic powder'},{name:'1/4 tsp chili powder'},{name:'Salt and pepper to taste'},{name:'Toppings: shredded lettuce, diced tomato, avocado, salsa, lime'}],
+       instructions:['Pour hot vegetable broth over dry TVP in a bowl. Let sit for 5 minutes until absorbed.','Heat olive oil in a skillet over medium-high heat.','Add rehydrated TVP and all spices. Stir well to combine.','Cook for 5-7 minutes, stirring occasionally, until slightly crispy.','Warm tortillas in a dry pan or microwave.','Fill each tortilla with TVP mixture and your choice of toppings.','Squeeze fresh lime over the top before serving.']}
+    ];
+    state.foodBank = freshRecipes.concat(state.foodBank);
+    saveState();
+  }
   if(!state.mealPlan) state.mealPlan={};
   if(state.quietStart===undefined) state.quietStart=22;
   if(state.quietEnd===undefined) state.quietEnd=7;
