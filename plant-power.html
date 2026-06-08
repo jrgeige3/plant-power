@@ -134,7 +134,15 @@ body{
 .spark{position:absolute;border-radius:3px;animation:sparkFly 0.85s ease-out forwards;}
 @keyframes sparkFly{0%{opacity:1;transform:scale(1) translate(0,0) rotate(0deg)}100%{opacity:0;transform:scale(0) translate(var(--tx),var(--ty)) rotate(var(--tr))}}
 
-/* NOURISH SECTION */
+/* STREAK MODE TOGGLE */
+.streak-mode-card{background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 10px var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.streak-mode-label{font-size:12px;font-weight:800;color:var(--text-muted);white-space:nowrap;}
+.streak-mode-toggle{display:flex;gap:6px;}
+.streak-mode-btn{display:flex;align-items:center;gap:5px;padding:8px 12px;border-radius:10px;border:2px solid var(--cream2);background:var(--cream2);font-family:var(--font);font-size:12px;font-weight:800;color:var(--text-muted);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.streak-mode-btn.selected{border-color:var(--sage-dark);background:rgba(90,138,72,0.1);color:var(--sage-dark);}
+.streak-mode-btn:active{transform:scale(0.96);}
+
+
 .nourish-section{padding:14px;}
 .section-label{font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:5px;}
 .section-label svg{width:13px;height:13px;}
@@ -144,7 +152,8 @@ body{
 .meal-slot.filled-anim{animation:slotPop 0.4s ease;}
 @keyframes slotPop{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
 .slot-svg{width:24px;height:24px;}
-.slot-num{position:absolute;bottom:2px;right:4px;font-size:9px;font-weight:800;color:var(--text-muted);}
+.meal-slot.filled{cursor:pointer;}
+.meal-slot.filled:active{transform:scale(0.9);}
 .meal-slot.filled .slot-num{color:var(--sage-dark);}
 
 /* NOURISH BUTTON — always fully visible */
@@ -206,6 +215,29 @@ body{
 .food-bank-empty-icon{width:48px;height:48px;margin:0 auto 10px;}
 .food-bank-empty-text{font-size:14px;font-weight:700;color:var(--text-muted);}
 .fb-section-title{font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase;padding:0 2px;}
+/* INGREDIENT LIBRARY */
+.ing-lib-card{background:#fff;border-radius:16px;box-shadow:0 2px 10px var(--shadow);overflow:hidden;margin-bottom:4px;}
+.ing-lib-list{display:flex;flex-direction:column;}
+.ing-lib-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--cream2);}
+.ing-lib-row:last-child{border-bottom:none;}
+.ing-lib-info{flex:1;}
+.ing-lib-name{font-size:13px;font-weight:800;color:var(--text-main);}
+.ing-lib-meta{font-size:11px;color:var(--text-muted);font-weight:600;margin-top:1px;}
+.ing-lib-protein{font-size:12px;font-weight:900;color:var(--sage-dark);background:rgba(90,138,72,0.1);border-radius:8px;padding:3px 8px;flex-shrink:0;}
+.ing-lib-del{background:none;border:none;font-size:18px;color:var(--text-muted);cursor:pointer;padding:4px;flex-shrink:0;}
+.ing-lib-empty{padding:16px;text-align:center;font-size:13px;color:var(--text-muted);font-weight:600;}
+.ing-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:11px;background:var(--sage-dark);color:#fff;border:none;border-radius:12px;font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer;transition:all 0.15s;margin-top:8px;}
+.ing-add-btn:active{transform:scale(0.97);}
+.create-recipe-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:linear-gradient(135deg,var(--terra-light),var(--terra));color:#fff;border:none;border-radius:14px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(201,123,74,0.3);transition:all 0.15s;margin-bottom:10px;}
+.create-recipe-btn:active{transform:scale(0.97);}
+.recipe-ing-row{display:flex;align-items:center;gap:8px;background:var(--cream2);border-radius:10px;padding:8px 10px;}
+.recipe-ing-name{flex:1;font-size:13px;font-weight:700;color:var(--text-main);}
+.recipe-ing-protein{font-size:11px;font-weight:800;color:var(--sage-dark);white-space:nowrap;}
+.recipe-ing-del{background:none;border:none;font-size:16px;color:var(--text-muted);cursor:pointer;padding:2px;flex-shrink:0;}
+.recipe-inst-row{display:flex;align-items:flex-start;gap:8px;background:var(--cream2);border-radius:10px;padding:8px 10px;}
+.recipe-inst-num{font-size:12px;font-weight:900;color:var(--sage-dark);min-width:18px;padding-top:1px;}
+.recipe-inst-input{flex:1;border:none;background:transparent;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-main);outline:none;resize:none;min-height:36px;}
+.recipe-inst-del{background:none;border:none;font-size:16px;color:var(--text-muted);cursor:pointer;padding:2px;flex-shrink:0;}
 
 /* AI Generator */
 .ai-gen-card{background:#fff;border-radius:18px;box-shadow:0 2px 10px var(--shadow);overflow:hidden;}
@@ -589,17 +621,30 @@ body{
       <div class="nourish-section">
         <div class="section-label"><svg viewBox="0 0 14 14" fill="none" stroke="#8A6E5A" stroke-width="1.5" stroke-linecap="round"><path d="M7 13L7 5"/><path d="M4 8Q7 4 10 8"/><path d="M2 11Q7 7 12 11"/></svg>Daily Nourishment</div>
         <div class="meal-slots" id="meal-slots">
-          <div class="meal-slot" id="slot-0"><svg class="slot-svg" id="slot-svg-0" viewBox="0 0 26 26"></svg><span class="slot-num">1</span></div>
-          <div class="meal-slot" id="slot-1"><svg class="slot-svg" id="slot-svg-1" viewBox="0 0 26 26"></svg><span class="slot-num">2</span></div>
-          <div class="meal-slot" id="slot-2"><svg class="slot-svg" id="slot-svg-2" viewBox="0 0 26 26"></svg><span class="slot-num">3</span></div>
-          <div class="meal-slot" id="slot-3"><svg class="slot-svg" id="slot-svg-3" viewBox="0 0 26 26"></svg><span class="slot-num">4</span></div>
-          <div class="meal-slot" id="slot-4"><svg class="slot-svg" id="slot-svg-4" viewBox="0 0 26 26"></svg><span class="slot-num">5</span></div>
+          <div class="meal-slot" id="slot-0" onclick="removeNourishment(0)"><svg class="slot-svg" id="slot-svg-0" viewBox="0 0 26 26"></svg><span class="slot-num">1</span></div>
+          <div class="meal-slot" id="slot-1" onclick="removeNourishment(1)"><svg class="slot-svg" id="slot-svg-1" viewBox="0 0 26 26"></svg><span class="slot-num">2</span></div>
+          <div class="meal-slot" id="slot-2" onclick="removeNourishment(2)"><svg class="slot-svg" id="slot-svg-2" viewBox="0 0 26 26"></svg><span class="slot-num">3</span></div>
+          <div class="meal-slot" id="slot-3" onclick="removeNourishment(3)"><svg class="slot-svg" id="slot-svg-3" viewBox="0 0 26 26"></svg><span class="slot-num">4</span></div>
+          <div class="meal-slot" id="slot-4" onclick="removeNourishment(4)"><svg class="slot-svg" id="slot-svg-4" viewBox="0 0 26 26"></svg><span class="slot-num">5</span></div>
         </div>
       </div>
       <button class="nourish-btn" onclick="logMeal()"><span class="btn-main">NOURISH</span><span class="btn-sub">Log a High-Protein Meal / Snack</span></button>
 
       <div class="stats-row" style="grid-template-columns:1fr;">
         <div class="stat-card"><svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#C97B4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div class="stat-val" id="stat-best-streak">0</div><div class="stat-lbl">Best streak ever</div></div>
+      </div>
+
+      <!-- Streak Mode Toggle -->
+      <div class="streak-mode-card">
+        <div class="streak-mode-label">Streak based on</div>
+        <div class="streak-mode-toggle">
+          <button class="streak-mode-btn" id="streak-mode-nourish" onclick="setStreakMode('nourish')">
+            5 Meals
+          </button>
+          <button class="streak-mode-btn" id="streak-mode-protein" onclick="setStreakMode('protein')">
+            Protein Goal
+          </button>
+        </div>
       </div>
       <div class="grass-deco"><svg viewBox="0 0 22 22" fill="none" stroke="#5A8A48" stroke-width="1.5" stroke-linecap="round"><path d="M11 20L11 8"/><path d="M7 13Q11 8 15 13"/><path d="M4 17Q11 11 18 17"/></svg><svg viewBox="0 0 22 22" fill="none" stroke="#5A8A48" stroke-width="1.5" stroke-linecap="round"><path d="M11 20L11 4"/><path d="M8 10Q11 5 14 10"/></svg><svg viewBox="0 0 22 22" fill="none" stroke="#5A8A48" stroke-width="1.5" stroke-linecap="round"><path d="M11 20L11 8"/><path d="M7 13Q11 8 15 13"/><path d="M4 17Q11 11 18 17"/></svg></div>
     </div>
@@ -647,7 +692,34 @@ body{
       </div>
 
             <!-- ── SAVED RECIPES BY CATEGORY ── -->
+      <!-- ── MY INGREDIENTS ── -->
+      <div class="fb-section-title">My Ingredients</div>
+      <div class="fb-category" id="ing-lib-accordion">
+        <div class="fb-cat-header" onclick="toggleIngLib()">
+          <div class="fb-cat-dot" style="background:#C8A850;"></div>
+          <div class="fb-cat-info">
+            <div class="fb-cat-name">Ingredient Library</div>
+            <div class="fb-cat-count" id="ing-lib-count">0 ingredients</div>
+          </div>
+          <svg class="fb-cat-chevron" id="ing-lib-chevron" viewBox="0 0 18 18" fill="none" stroke="#8A6E5A" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg>
+        </div>
+        <div class="fb-cat-body" id="ing-lib-body">
+          <div class="fb-cat-items" style="padding:8px;">
+            <div class="ing-lib-list" id="ing-lib-list"></div>
+            <button class="ing-add-btn" onclick="openAddIngredientModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Ingredient
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── MY RECIPES ── -->
       <div class="fb-section-title">My Recipes</div>
+      <button class="create-recipe-btn" onclick="openCreateRecipeModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create New Recipe
+      </button>
       <div id="food-bank-categorized">
         <!-- Rendered by JS -->
       </div>
@@ -755,6 +827,92 @@ body{
       </div>
     </div>
   </div><!-- end tab-planner -->
+
+<!-- ADD INGREDIENT MODAL -->
+<div class="modal-overlay" id="modal-add-ingredient">
+  <div class="modal-box" style="text-align:left;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-size:18px;font-weight:900;color:var(--terra-dark);" id="add-ing-title">Add Ingredient</div>
+      <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);" onclick="closeModal('modal-add-ingredient')">&#x2715;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="calc-field">
+        <div class="calc-label">Ingredient Name</div>
+        <input type="text" class="calc-input" id="ing-name-input" placeholder="e.g. Firm Tofu" style="font-size:15px;"/>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Brand (optional)</div>
+        <input type="text" class="calc-input" id="ing-brand-input" placeholder="e.g. Nasoya" style="font-size:15px;"/>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Serving Size</div>
+        <input type="text" class="calc-input" id="ing-serving-input" placeholder="e.g. 3 oz" style="font-size:15px;"/>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Protein per serving (g)</div>
+        <input type="number" class="calc-input" id="ing-protein-input" placeholder="e.g. 8" min="0" inputmode="decimal" style="font-size:15px;"/>
+      </div>
+    </div>
+    <button class="modal-btn primary" onclick="saveIngredient()" style="margin-top:16px;">Save Ingredient</button>
+    <button class="modal-btn secondary" onclick="closeModal('modal-add-ingredient')" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<!-- CREATE / EDIT RECIPE MODAL -->
+<div class="modal-overlay" id="modal-create-recipe">
+  <div class="modal-box" style="text-align:left;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:18px;font-weight:900;color:var(--terra-dark);" id="create-recipe-title">Create Recipe</div>
+      <button style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);" onclick="closeModal('modal-create-recipe')">&#x2715;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="calc-field">
+        <div class="calc-label">Recipe Name</div>
+        <input type="text" class="calc-input" id="recipe-name-input" placeholder="e.g. Tofu Scramble" style="font-size:15px;"/>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Category</div>
+        <div class="freq-row" style="margin-top:4px;">
+          <button class="freq-btn selected" id="rcr-cat-breakfast" onclick="setRecipeCat('Breakfast')">Breakfast</button>
+          <button class="freq-btn" id="rcr-cat-lunch" onclick="setRecipeCat('Lunch/Dinner')">Lunch/Dinner</button>
+          <button class="freq-btn" id="rcr-cat-snack" onclick="setRecipeCat('Snack')">Snack</button>
+        </div>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Serving Size</div>
+        <input type="text" class="calc-input" id="recipe-serving-input" placeholder="e.g. 2 tacos, 1 bowl" style="font-size:15px;"/>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Estimated Protein (g)</div>
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:6px;">Optional — you can also set this per ingredient after saving.</div>
+        <input type="number" class="calc-input" id="recipe-protein-input" placeholder="e.g. 22" min="0" inputmode="decimal" style="font-size:15px;"/>
+      </div>
+      <div class="calc-field">
+        <div class="calc-label">Paste Recipe</div>
+        <div style="font-size:11px;color:var(--text-muted);font-weight:600;margin-bottom:6px;">Copy and paste your full recipe from Claude or any source. The app will auto-detect ingredients and instructions.</div>
+        <textarea id="recipe-paste-input" placeholder="Paste your full recipe here — ingredients, instructions, everything..." style="width:100%;min-height:160px;border:2px solid var(--cream2);border-radius:12px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text-main);background:var(--cream);padding:10px;outline:none;resize:none;box-sizing:border-box;line-height:1.5;"></textarea>
+      </div>
+      <div id="recipe-preview-section" style="display:none;">
+        <div class="calc-label">Preview</div>
+        <div id="recipe-preview-content" style="background:var(--cream2);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--text-main);line-height:1.6;max-height:140px;overflow-y:auto;"></div>
+      </div>
+    </div>
+    <button class="modal-btn primary" style="margin-top:16px;" onclick="parseAndSaveRecipe()">Parse &amp; Save Recipe</button>
+    <button class="modal-btn secondary" onclick="closeModal('modal-create-recipe')" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<!-- INGREDIENT PICKER BOTTOM SHEET -->
+<div class="recipe-picker-overlay" id="ing-picker-overlay" onclick="closeIngPicker(event)">
+  <div class="recipe-picker-sheet">
+    <div class="rps-header">
+      <div class="rps-title">Choose Ingredient</div>
+      <button class="rps-close" onclick="closeIngPicker()">&#x2715;</button>
+    </div>
+    <div class="rps-subtitle" id="ing-picker-subtitle">From your ingredient library</div>
+    <div class="rps-list" id="ing-picker-list"></div>
+  </div>
+</div>
 
   <!-- BOTTOM NAV — 4 tabs: Home, Planner, Food Bank, Settings -->
   <div class="bottom-nav">
@@ -869,7 +1027,7 @@ body{
 // STATE & DB
 // ================================================================
 let db;
-let state = {char:null,streak:0,bestStreak:0,totalMeals:0,todayMeals:0,lastLogDate:null,lastLogTime:null,notifPermission:'default',shownLevels:[],reminderHours:3,quietHours:true,quietStart:22,quietEnd:7,foodBank:[],mealPlan:{},proteinGoal:120,proteinLog:{}};
+let state = {char:null,streak:0,bestStreak:0,totalMeals:0,todayMeals:0,lastLogDate:null,lastLogTime:null,notifPermission:'default',shownLevels:[],reminderHours:3,quietHours:true,quietStart:22,quietEnd:7,foodBank:[],mealPlan:{},proteinGoal:120,proteinLog:{},streakMode:'nourish',ingredientLibrary:[]};
 const DB_NAME='PlantPowerDB',DB_VER=2,STORE='appState';
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=e=>e.target.result.objectStoreNames.contains(STORE)||e.target.result.createObjectStore(STORE);r.onsuccess=e=>{db=e.target.result;res();};r.onerror=rej;});}
 function saveState(){try{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put({...state,_notifHandle:undefined},'main');}catch(e){}}
@@ -1086,11 +1244,14 @@ function renderFoodBank(){
         var ingHTML = '';
         if(isObj){
           r.ingredients.forEach(function(ing,ii){
-            ingHTML += '<div class="fb-ingredient-row"><span class="fb-ingredient-name">'+ing.name+'</span>';
+            ingHTML += '<div class="fb-ingredient-row">';
+            ingHTML += '<span class="fb-ingredient-name" onclick="openSwapIngredient('+r._i+','+ii+')" style="cursor:pointer;flex:1;" title="Tap to swap">'+ing.name+'</span>';
             if(ing.protein !== undefined){
               ingHTML += '<span class="fb-ingredient-protein editable-chip" onclick="editIngredientProtein('+r._i+','+ii+',this)">';
               ingHTML += '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="opacity:0.5;margin-right:2px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
               ingHTML += ing.protein+'g</span>';
+            } else {
+              ingHTML += '<span class="fb-ingredient-protein" style="opacity:0.5;cursor:pointer;" onclick="addIngredientProtein('+r._i+','+ii+')">+g</span>';
             }
             ingHTML += '</div>';
           });
@@ -1113,6 +1274,7 @@ function renderFoodBank(){
         itemsHTML += '<span class="recipe-chip" style="background:rgba(90,138,72,0.12);color:var(--sage-dark);font-weight:900;" id="prot-chip-'+r._i+'">'+totalProt+'g protein</span>';
         itemsHTML += '</div>';
         itemsHTML += '<button class="bank-remove-btn" onclick="removeFromBank('+r._i+')">Remove</button>';
+        itemsHTML += '<button class="bank-remove-btn" style="right:64px;background:rgba(90,138,72,0.12);color:var(--sage-dark);" onclick="openCreateRecipeModal('+r._i+')">Edit</button>';
         itemsHTML += '<button class="bank-expand-btn" onclick="toggleBankCard('+r._i+',this)">';
         itemsHTML += '<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#5A8A48" stroke-width="2" stroke-linecap="round"><path d="M4 6L9 11L14 6"/></svg> View recipe</button>';
         itemsHTML += '<div id="bank-detail-'+r._i+'" style="display:none;margin-top:10px">';
@@ -1183,14 +1345,37 @@ function editServingSize(recipeIdx){
   showToast('Serving updated — '+newP+'g protein');
 }
 
+function incrementStreakForProtein(){
+  var today = todayStr();
+  if(state.lastLogDate === today) return; // already counted today
+  state.streak++;
+  if(state.streak > state.bestStreak) state.bestStreak = state.streak;
+  state.lastLogDate = today;
+  saveState();
+  updateDashboard();
+  checkLevelUp();
+}
+
 function quickAdjustProtein(delta){
   var today = todayStr();
   if(!state.proteinLog || !state.proteinLog._date) state.proteinLog = {_date:today, total:0};
-  var newTotal = Math.max(0, (parseInt(state.proteinLog.total)||0) + delta);
+  var prevTotal = parseInt(state.proteinLog.total) || 0;
+  var newTotal = Math.max(0, prevTotal + delta);
+  var goal = state.proteinGoal || 120;
   state.proteinLog.total = newTotal;
   saveState();
   updateProteinRing();
   showToast(delta > 0 ? '+'+Math.abs(delta)+'g added' : '-'+Math.abs(delta)+'g removed');
+  // Check protein goal streak on addition
+  if(delta > 0 && prevTotal < goal && newTotal >= goal){
+    if(state.streakMode === 'protein') incrementStreakForProtein();
+    setTimeout(function(){
+      fireStageConfetti(true);
+      fireSparks();
+      var msg = state.streakMode === 'protein' ? 'Protein goal reached! Streak extended!' : 'Protein goal reached!';
+      showToast(msg);
+    }, 400);
+  }
 }
 
 function toggleBankCard(idx,btn){
@@ -1396,7 +1581,6 @@ function selectChar(el){document.querySelectorAll('#screen-onboard .char-card').
 function startJourney(){if(!selectedChar)return;state.char=selectedChar;state.streak=0;state.bestStreak=0;state.totalMeals=0;state.todayMeals=0;state.lastLogDate=null;state.lastLogTime=null;state.shownLevels=[];state.foodBank=state.foodBank||[];saveState();showDashboard();}
 function showDashboard(){document.getElementById('screen-onboard').classList.remove('active');document.getElementById('screen-main').classList.add('active');checkDayReset();updateDashboard();updateReminderUI();scheduleReminderFromState();if(typeof renderProteinSlots==='function')renderProteinSlots();}
 function checkDayReset(){
-  // Handles the edge case where the app stays open past midnight
   const today=todayStr();
   const lastActive=state.lastLogDate||(state.proteinLog&&state.proteinLog._date)||null;
   if(lastActive && lastActive!==today){
@@ -1431,6 +1615,7 @@ function updateDashboard(){
   for(let i=0;i<5;i++){const slot=document.getElementById('slot-'+i),svg=document.getElementById('slot-svg-'+i);if(i<state.todayMeals){slot.classList.add('filled');svg.innerHTML=slotFilledSVG();}else{slot.classList.remove('filled');svg.innerHTML=slotEmptySVG();}}
   document.getElementById('stat-best-streak').textContent=state.bestStreak;
   if(typeof updateProteinRing==='function')updateProteinRing();
+  updateStreakModeUI();
 }
 function updateSettingsUI(){
   const lv=getLevelInfo(state.streak);
@@ -1441,6 +1626,24 @@ function updateSettingsUI(){
 // ================================================================
 // LOG MEAL
 // ================================================================
+function removeNourishment(slotIndex){
+  // Only remove if this slot is filled (slotIndex < todayMeals)
+  if(slotIndex >= state.todayMeals) return;
+  // Only remove the last filled slot — tapping any earlier filled slot removes the last one
+  // This keeps the streak logic simple and prevents gaps
+  if(state.todayMeals <= 0) return;
+  // Warn if removing would undo a completed streak (5th meal)
+  if(state.todayMeals === 5 && state.streakMode === 'nourish'){
+    if(!confirm('Removing this will undo today\'s streak completion. Continue?')) return;
+    state.streak = Math.max(0, state.streak - 1);
+  }
+  state.todayMeals--;
+  state.totalMeals = Math.max(0, state.totalMeals - 1);
+  saveState();
+  updateDashboard();
+  showToast('Nourishment removed');
+}
+
 function logMeal(){
   const today=todayStr();
   if(state.lastLogDate&&state.lastLogDate!==today)state.todayMeals=0;
@@ -1627,6 +1830,8 @@ async function init(){
     saveState();
   }
   if(!state.mealPlan) state.mealPlan={};
+  if(!state.streakMode) state.streakMode='nourish';
+  if(!state.ingredientLibrary) state.ingredientLibrary=[];
   if(state.quietStart===undefined) state.quietStart=22;
   if(state.quietEnd===undefined) state.quietEnd=7;
 
@@ -1878,6 +2083,7 @@ function updateProteinRing(){
   if(totalEl) totalEl.textContent = total+'g';
   if(goalEl) goalEl.textContent = goal+'g';
   if(goalBtn) goalBtn.textContent = goal+'g';
+  updateStreakModeUI();
 }
 
 function openAddProteinModal(){
@@ -1892,23 +2098,22 @@ function saveAddProtein(){
   var val = input ? parseInt(input.value) : 0;
   if(!val || val <= 0){ showToast('Enter a protein amount first'); return; }
   var today = todayStr();
-  if(!state.proteinLog || !state.proteinLog._date) state.proteinLog = {_date:today};
-  // Calculate previous total before adding
+  if(!state.proteinLog || !state.proteinLog._date) state.proteinLog = {_date:today, total:0};
   var prevTotal = parseInt(state.proteinLog.total) || 0;
   var newTotal = prevTotal + val;
   var goal = state.proteinGoal || 120;
-  // Store as a simple running total
   state.proteinLog.total = newTotal;
   saveState();
   closeModal('modal-add-protein');
   updateProteinRing();
   showToast('+'+val+'g protein logged');
-  // Fire confetti if goal just reached
   if(prevTotal < goal && newTotal >= goal){
+    if(state.streakMode === 'protein') incrementStreakForProtein();
     setTimeout(function(){
       fireStageConfetti(true);
       fireSparks();
-      showToast('Protein goal reached! \uD83C\uDF3F');
+      var msg = state.streakMode === 'protein' ? 'Protein goal reached! Streak extended!' : 'Protein goal reached!';
+      showToast(msg);
     }, 400);
   }
 }
@@ -1929,6 +2134,30 @@ function openProteinCalc(){
   if(sb)sb.style.display='none';
   if(cw)cw.value='';
   openModal('modal-protein-calc');
+}
+
+function setStreakMode(mode){
+  if(state.streakMode === mode) return;
+  var label = mode === 'nourish' ? '5 Meals' : 'Protein Goal';
+  var confirmed = confirm('Switch streak to "'+label+'"?\n\nWarning: your current streak will reset to 0.');
+  if(!confirmed) return;
+  state.streakMode = mode;
+  state.streak = 0;
+  state.todayMeals = 0;
+  state.proteinLog = {_date: todayStr(), total: 0};
+  state.lastLogDate = null;
+  saveState();
+  updateDashboard();
+  updateProteinRing();
+  showToast('Streak mode switched to '+label+'. Streak reset.');
+}
+
+function updateStreakModeUI(){
+  var nm = document.getElementById('streak-mode-nourish');
+  var pm = document.getElementById('streak-mode-protein');
+  var mode = state.streakMode || 'nourish';
+  if(nm) nm.classList.toggle('selected', mode === 'nourish');
+  if(pm) pm.classList.toggle('selected', mode === 'protein');
 }
 
 function setCalcUnit(unit){
@@ -1982,6 +2211,321 @@ function applyProteinGoal(){
   updateProteinRing();
   showToast('Daily goal set to '+state.proteinGoal+'g');
 }
+
+// ================================================================
+// INGREDIENT LIBRARY
+// ================================================================
+var editingIngredientIdx = null;
+
+var ingLibOpen = false;
+
+function toggleIngLib(){
+  ingLibOpen = !ingLibOpen;
+  var body = document.getElementById('ing-lib-body');
+  var chevron = document.getElementById('ing-lib-chevron');
+  if(body) body.classList.toggle('open', ingLibOpen);
+  if(chevron) chevron.classList.toggle('open', ingLibOpen);
+}
+
+function renderIngredientLibrary(){
+  var list = document.getElementById('ing-lib-list');
+  var countEl = document.getElementById('ing-lib-count');
+  var lib = state.ingredientLibrary || [];
+  if(countEl) countEl.textContent = lib.length + ' ingredient' + (lib.length !== 1 ? 's' : '');
+  if(!list) return;
+  if(lib.length === 0){
+    list.innerHTML = '<div class="ing-lib-empty">No ingredients yet. Add your first one below.</div>';
+    return;
+  }
+  list.innerHTML = lib.map(function(ing, i){
+    var meta = ing.serving + (ing.brand ? ' · ' + ing.brand : '');
+    return '<div class="ing-lib-row">' +
+      '<div class="ing-lib-info">' +
+        '<div class="ing-lib-name">' + ing.name + '</div>' +
+        '<div class="ing-lib-meta">' + meta + '</div>' +
+      '</div>' +
+      '<span class="ing-lib-protein">' + ing.protein + 'g</span>' +
+      '<button class="ing-lib-del" onclick="editIngredientLib(' + i + ')" title="Edit">&#9998;</button>' +
+      '<button class="ing-lib-del" onclick="deleteIngredientLib(' + i + ')" title="Remove">&#x2715;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function openAddIngredientModal(idx){
+  editingIngredientIdx = (idx !== undefined) ? idx : null;
+  var title = document.getElementById('add-ing-title');
+  if(title) title.textContent = editingIngredientIdx !== null ? 'Edit Ingredient' : 'Add Ingredient';
+  var lib = state.ingredientLibrary || [];
+  var ing = editingIngredientIdx !== null ? lib[editingIngredientIdx] : {};
+  document.getElementById('ing-name-input').value = ing.name || '';
+  document.getElementById('ing-brand-input').value = ing.brand || '';
+  document.getElementById('ing-serving-input').value = ing.serving || '';
+  document.getElementById('ing-protein-input').value = ing.protein !== undefined ? ing.protein : '';
+  openModal('modal-add-ingredient');
+  setTimeout(function(){ document.getElementById('ing-name-input').focus(); }, 300);
+}
+
+function editIngredientLib(idx){ openAddIngredientModal(idx); }
+
+function deleteIngredientLib(idx){
+  if(!confirm('Remove this ingredient?')) return;
+  state.ingredientLibrary.splice(idx, 1);
+  saveState();
+  renderIngredientLibrary();
+}
+
+function saveIngredient(){
+  var name = document.getElementById('ing-name-input').value.trim();
+  var brand = document.getElementById('ing-brand-input').value.trim();
+  var serving = document.getElementById('ing-serving-input').value.trim();
+  var protein = parseFloat(document.getElementById('ing-protein-input').value);
+  if(!name){ showToast('Enter an ingredient name'); return; }
+  if(!serving){ showToast('Enter a serving size'); return; }
+  if(isNaN(protein) || protein < 0){ showToast('Enter a valid protein amount'); return; }
+  if(!state.ingredientLibrary) state.ingredientLibrary = [];
+  var entry = {name: name, brand: brand, serving: serving, protein: protein};
+  if(editingIngredientIdx !== null){
+    state.ingredientLibrary[editingIngredientIdx] = entry;
+  } else {
+    state.ingredientLibrary.push(entry);
+  }
+  saveState();
+  closeModal('modal-add-ingredient');
+  renderIngredientLibrary();
+  showToast(editingIngredientIdx !== null ? 'Ingredient updated' : 'Ingredient saved');
+  editingIngredientIdx = null;
+}
+
+// ================================================================
+// CREATE / EDIT RECIPE — paste-based with auto-parse
+// ================================================================
+var recipeBuilderCat = 'Breakfast';
+var editingRecipeIdx = null;
+
+function setRecipeCat(cat){
+  recipeBuilderCat = cat;
+  var map = {'Breakfast':'rcr-cat-breakfast','Lunch/Dinner':'rcr-cat-lunch','Snack':'rcr-cat-snack'};
+  Object.keys(map).forEach(function(c){
+    var el = document.getElementById(map[c]);
+    if(el) el.classList.toggle('selected', c === cat);
+  });
+}
+
+function openCreateRecipeModal(recipeIdx){
+  editingRecipeIdx = recipeIdx !== undefined ? recipeIdx : null;
+  var title = document.getElementById('create-recipe-title');
+  if(title) title.textContent = editingRecipeIdx !== null ? 'Edit Recipe' : 'Create Recipe';
+  recipeBuilderCat = 'Breakfast';
+  var nameEl = document.getElementById('recipe-name-input');
+  var servingEl = document.getElementById('recipe-serving-input');
+  var pasteEl = document.getElementById('recipe-paste-input');
+  var previewSection = document.getElementById('recipe-preview-section');
+  if(previewSection) previewSection.style.display = 'none';
+  if(editingRecipeIdx !== null){
+    var r = state.foodBank[editingRecipeIdx];
+    if(nameEl) nameEl.value = r.name || '';
+    if(servingEl) servingEl.value = r.serving || '';
+    var proteinEl = document.getElementById('recipe-protein-input');
+    if(proteinEl) proteinEl.value = calcRecipeProtein(r,1) || '';
+    recipeBuilderCat = r.category || 'Breakfast';
+    // Reconstruct paste text from existing recipe
+    var pasteText = '';
+    if(r.ingredients && r.ingredients.length > 0){
+      pasteText += 'Ingredients:\n';
+      r.ingredients.forEach(function(ing){
+        pasteText += (typeof ing === 'object' ? ing.name : ing) + '\n';
+      });
+    }
+    if(r.instructions && r.instructions.length > 0){
+      pasteText += '\nInstructions:\n';
+      r.instructions.forEach(function(inst, i){ pasteText += (i+1) + '. ' + inst + '\n'; });
+    }
+    if(pasteEl) pasteEl.value = pasteText.trim();
+  } else {
+    if(nameEl) nameEl.value = '';
+    if(servingEl) servingEl.value = '';
+    var proteinClearEl = document.getElementById('recipe-protein-input');
+    if(proteinClearEl) proteinClearEl.value = '';
+    if(pasteEl) pasteEl.value = '';
+  }
+  setRecipeCat(recipeBuilderCat);
+  openModal('modal-create-recipe');
+  setTimeout(function(){ if(nameEl) nameEl.focus(); }, 300);
+}
+
+function parseRecipeText(text){
+  var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 0; });
+
+  var ingredients = [];
+  var instructions = [];
+
+  // Detect explicit section headers
+  var inIngredients = false;
+  var inInstructions = false;
+  var hasHeaders = lines.some(function(l){
+    return /^(ingredients?|directions?|instructions?|steps?|method)\s*:?\s*$/i.test(l);
+  });
+
+  if(hasHeaders){
+    lines.forEach(function(line){
+      if(/^(ingredients?)\s*:?\s*$/i.test(line)){ inIngredients=true; inInstructions=false; return; }
+      if(/^(directions?|instructions?|steps?|method)\s*:?\s*$/i.test(line)){ inInstructions=true; inIngredients=false; return; }
+      if(inIngredients) ingredients.push({name: line});
+      else if(inInstructions){
+        var clean = line.replace(/^\d+[\.\)]\s*/, '');
+        if(clean) instructions.push(clean);
+      }
+    });
+  } else {
+    // Heuristic detection
+    var qty = /^[\d¼½¾\/⅓-⅞]|\d+\s*(oz|g|lb|cup|tbsp|tsp|ml|l|pinch|dash|clove|can|pkg|pack|slice|piece|handful)/i;
+    var action = /^(heat|cook|mix|stir|add|combine|place|pour|bring|simmer|bake|roast|chop|dice|slice|blend|whisk|season|drain|rinse|toss|fold|spread|top|serve|let|allow|remove|transfer|wash|peel|grate|melt|saut)/i;
+    var stepNum = /^\d+[\.\)]\s/;
+    lines.forEach(function(line){
+      if(stepNum.test(line)){
+        instructions.push(line.replace(/^\d+[\.\)]\s*/, ''));
+      } else if(action.test(line) || line.length > 80){
+        instructions.push(line);
+      } else if(qty.test(line) || line.length < 60){
+        ingredients.push({name: line});
+      } else {
+        instructions.push(line);
+      }
+    });
+  }
+
+  return {ingredients: ingredients, instructions: instructions};
+}
+
+function parseAndSaveRecipe(){
+  var name = (document.getElementById('recipe-name-input').value || '').trim();
+  var serving = (document.getElementById('recipe-serving-input').value || '').trim();
+  var pasteText = (document.getElementById('recipe-paste-input').value || '').trim();
+  if(!name){ showToast('Enter a recipe name'); return; }
+  if(!serving){ showToast('Enter a serving size'); return; }
+  if(!pasteText){ showToast('Paste your recipe first'); return; }
+
+  var parsed = parseRecipeText(pasteText);
+  var proteinEstimate = parseFloat((document.getElementById('recipe-protein-input') || {}).value) || 0;
+  // If user entered an overall protein estimate and no ingredient has protein yet,
+  // store it as a special total override on the recipe
+  if(proteinEstimate > 0 && !parsed.ingredients.some(function(ing){ return ing.protein !== undefined; })){
+    parsed.ingredients = parsed.ingredients.map(function(ing, i){
+      // Assign all protein to first ingredient as a placeholder
+      if(i === 0) return Object.assign({}, ing, {protein: proteinEstimate});
+      return ing;
+    });
+  }
+
+  var recipe = {
+    name: name,
+    category: recipeBuilderCat,
+    serving: serving,
+    servingMultiplier: 1,
+    baseServing: parseFloat(serving) || 1,
+    ingredients: parsed.ingredients,
+    instructions: parsed.instructions
+  };
+
+  if(!state.foodBank) state.foodBank = [];
+  if(editingRecipeIdx !== null){
+    state.foodBank[editingRecipeIdx] = Object.assign({}, state.foodBank[editingRecipeIdx], recipe);
+  } else {
+    state.foodBank.push(recipe);
+  }
+  saveState();
+  fbCatOpen[recipeBuilderCat] = true;
+  closeModal('modal-create-recipe');
+  renderFoodBank();
+  showToast(editingRecipeIdx !== null ? 'Recipe updated' : 'Recipe saved to Food Bank');
+  editingRecipeIdx = null;
+}
+
+// ── Swap ingredient from library ──────────────────────────────────
+var swappingRecipeIdx = null;
+var swappingIngIdx = null;
+
+function openSwapIngredient(recipeIdx, ingIdx){
+  swappingRecipeIdx = recipeIdx;
+  swappingIngIdx = ingIdx;
+  var lib = state.ingredientLibrary || [];
+  var subtitle = document.getElementById('ing-picker-subtitle');
+  var list = document.getElementById('ing-picker-list');
+  if(!list) return;
+  var ingName = '';
+  if(state.foodBank[recipeIdx] && state.foodBank[recipeIdx].ingredients[ingIdx]){
+    var ing = state.foodBank[recipeIdx].ingredients[ingIdx];
+    ingName = typeof ing === 'object' ? ing.name : ing;
+  }
+  if(subtitle) subtitle.textContent = 'Replace: ' + ingName;
+  if(lib.length === 0){
+    list.innerHTML = '<div class="rps-empty">No ingredients in your library yet.<br>Add some in the My Ingredients section.</div>';
+  } else {
+    list.innerHTML = lib.map(function(ing, i){
+      return '<div class="rps-item" onclick="confirmSwapIngredient(' + i + ')">' +
+        '<div class="rps-item-info">' +
+          '<div class="rps-item-name">' + ing.name + (ing.brand ? ' · ' + ing.brand : '') + '</div>' +
+          '<div class="rps-item-meta">' + ing.serving + '</div>' +
+        '</div>' +
+        '<div class="rps-item-protein">' + ing.protein + 'g</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('ing-picker-overlay').classList.add('active');
+}
+
+function closeIngPicker(e){
+  if(e && e.target !== document.getElementById('ing-picker-overlay')) return;
+  document.getElementById('ing-picker-overlay').classList.remove('active');
+  swappingRecipeIdx = null;
+  swappingIngIdx = null;
+}
+
+function addIngredientProtein(recipeIdx, ingIdx){
+  var ingName = state.foodBank[recipeIdx].ingredients[ingIdx].name;
+  var val = prompt('Enter protein for "'+ingName+'" (grams):','0');
+  if(val === null) return;
+  var n = parseFloat(val);
+  if(isNaN(n) || n < 0) return;
+  state.foodBank[recipeIdx].ingredients[ingIdx].protein = n;
+  saveState();
+  var openId = 'bank-detail-'+recipeIdx;
+  renderFoodBank();
+  var detail = document.getElementById(openId);
+  if(detail) detail.style.display = 'block';
+  showToast('Protein added');
+}
+
+function confirmSwapIngredient(libIdx){
+  if(swappingRecipeIdx === null || swappingIngIdx === null) return;
+  var ing = state.ingredientLibrary[libIdx];
+  state.foodBank[swappingRecipeIdx].ingredients[swappingIngIdx] = {
+    name: ing.name + (ing.brand ? ' (' + ing.brand + ')' : ''),
+    brand: ing.brand,
+    protein: ing.protein,
+    serving: ing.serving
+  };
+  saveState();
+  document.getElementById('ing-picker-overlay').classList.remove('active');
+  // Re-render keeping card open
+  var openId = 'bank-detail-' + swappingRecipeIdx;
+  renderFoodBank();
+  var detail = document.getElementById(openId);
+  if(detail) detail.style.display = 'block';
+  showToast(ing.name + ' swapped in');
+  swappingRecipeIdx = null;
+  swappingIngIdx = null;
+}
+
+// ── Hook renderIngredientLibrary into tab switch ──────────────────
+var _origSwitchTab = switchTab;
+switchTab = function(tab){
+  _origSwitchTab(tab);
+  if(tab === 'foodbank'){
+    if(!state.ingredientLibrary) state.ingredientLibrary = [];
+    renderIngredientLibrary();
+  }
+};
 
 init();
 
