@@ -1581,14 +1581,30 @@ function selectChar(el){document.querySelectorAll('#screen-onboard .char-card').
 function startJourney(){if(!selectedChar)return;state.char=selectedChar;state.streak=0;state.bestStreak=0;state.totalMeals=0;state.todayMeals=0;state.lastLogDate=null;state.lastLogTime=null;state.shownLevels=[];state.foodBank=state.foodBank||[];saveState();showDashboard();}
 function showDashboard(){document.getElementById('screen-onboard').classList.remove('active');document.getElementById('screen-main').classList.add('active');checkDayReset();updateDashboard();updateReminderUI();scheduleReminderFromState();if(typeof renderProteinSlots==='function')renderProteinSlots();}
 function checkDayReset(){
-  const today=todayStr();
-  const lastActive=state.lastLogDate||(state.proteinLog&&state.proteinLog._date)||null;
-  if(lastActive && lastActive!==today){
-    const diff=(new Date(today)-new Date(lastActive))/86400000;
-    state.todayMeals=0;
-    state.proteinLog={_date:today,total:0};
-    if(diff>1) state.streak=0;
+  const today = todayStr();
+
+  // Reset daily trackers if it's a new day
+  const lastProteinDate = state.proteinLog && state.proteinLog._date;
+  if(lastProteinDate && lastProteinDate !== today){
+    state.todayMeals = 0;
+    state.proteinLog = {_date:today, total:0};
     saveState();
+  } else if(!lastProteinDate){
+    state.proteinLog = {_date:today, total:0};
+  }
+
+  // Break streak only if goal was not completed yesterday or today
+  // lastLogDate is ONLY set when the goal is actually completed
+  if(state.streak > 0 && state.lastLogDate){
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yStr = yesterday.getFullYear()+'-'+
+      String(yesterday.getMonth()+1).padStart(2,'0')+'-'+
+      String(yesterday.getDate()).padStart(2,'0');
+    if(state.lastLogDate !== today && state.lastLogDate !== yStr){
+      state.streak = 0;
+      saveState();
+    }
   }
 }
 function todayStr(){
@@ -1844,25 +1860,33 @@ async function init(){
   }
 
   // ── Daily reset logic ──
-  const lastActive = state.lastLogDate || (state.proteinLog && state.proteinLog._date) || null;
+  const lastProteinDate2 = state.proteinLog && state.proteinLog._date;
 
-  if(lastActive && lastActive !== today){
+  if(lastProteinDate2 && lastProteinDate2 !== today){
     // New day — reset daily trackers
-    const diff=(new Date(today)-new Date(lastActive))/86400000;
-    state.todayMeals=0;
-    state.proteinLog={_date:today, total:0};
-    if(diff>1) state.streak=0;
+    state.todayMeals = 0;
+    state.proteinLog = {_date:today, total:0};
     saveState();
-  } else if(!lastActive){
+  } else if(!lastProteinDate2){
     // First ever launch
-    state.proteinLog={_date:today, total:0};
+    state.proteinLog = {_date:today, total:0};
   } else {
-    // Same day — restore protein log as-is, just ensure structure is valid
-    if(!state.proteinLog || !state.proteinLog._date){
-      state.proteinLog={_date:today, total:0};
-    }
+    // Same day — ensure structure valid
     if(typeof state.proteinLog.total !== 'number'){
       state.proteinLog.total = parseInt(state.proteinLog.total)||0;
+    }
+  }
+
+  // Break streak if goal was not completed yesterday or today
+  if(state.streak > 0 && state.lastLogDate){
+    const yesterday2 = new Date();
+    yesterday2.setDate(yesterday2.getDate() - 1);
+    const yStr2 = yesterday2.getFullYear()+'-'+
+      String(yesterday2.getMonth()+1).padStart(2,'0')+'-'+
+      String(yesterday2.getDate()).padStart(2,'0');
+    if(state.lastLogDate !== today && state.lastLogDate !== yStr2){
+      state.streak = 0;
+      saveState();
     }
   }
 
@@ -2143,9 +2167,6 @@ function setStreakMode(mode){
   if(!confirmed) return;
   state.streakMode = mode;
   state.streak = 0;
-  state.todayMeals = 0;
-  state.proteinLog = {_date: todayStr(), total: 0};
-  state.lastLogDate = null;
   saveState();
   updateDashboard();
   updateProteinRing();
