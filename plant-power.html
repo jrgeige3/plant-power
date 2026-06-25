@@ -34,7 +34,7 @@ body{
 .screen.active{display:flex;}
 
 /* BOTTOM NAV */
-.bottom-nav{position:sticky;bottom:0;background:#fff;border-top:1.5px solid var(--cream2);display:flex;z-index:100;box-shadow:0 -4px 16px var(--shadow);}
+.bottom-nav{position:sticky;bottom:0;background:#fff;border-top:1.5px solid var(--cream2);display:flex;z-index:100;box-shadow:0 -4px 16px var(--shadow);border-radius:22px 22px 0 0;overflow:hidden;}
 .nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 12px;cursor:pointer;border:none;background:none;font-family:var(--font);font-size:10px;font-weight:800;color:var(--text-muted);gap:3px;transition:color 0.18s;}
 .nav-tab svg{width:22px;height:22px;}
 .nav-tab.active{color:var(--sage-dark);}
@@ -64,7 +64,7 @@ body{
 .btn-start:disabled{background:#ccc;box-shadow:none;cursor:not-allowed;}
 
 /* ===== DASHBOARD ===== */
-.top-bar{background:linear-gradient(135deg,#7AB863 0%,#5A8A48 100%);padding:20px 18px 18px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;border-radius:22px;margin:12px 12px 0;}
+.top-bar{background:linear-gradient(135deg,#7AB863 0%,#5A8A48 100%);padding:20px 18px 18px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;border-radius:22px;}
 .top-bar::before{content:'';position:absolute;top:-24px;right:-24px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;}
 .meal-slot{cursor:pointer;}
 .streak-info{display:flex;flex-direction:column;gap:1px;}
@@ -79,7 +79,7 @@ body{
 .dashboard-scroll{flex:1;padding:16px 16px 8px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 
 /* LEVEL BADGE */
-.level-badge{background:linear-gradient(135deg,var(--terra-light),var(--terra));border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 14px rgba(201,123,74,0.25);}
+.level-badge{display:none;}
 .lv-icon-wrap{width:26px;height:26px;flex-shrink:0;}
 .level-badge .lv-text{flex:1;}
 .level-badge .lv-name{font-size:13px;font-weight:800;color:#fff;}
@@ -279,6 +279,7 @@ body{
 .ai-refine-btn:disabled{background:#ccc;cursor:not-allowed;}
 
 /* Categorized Food Bank */
+#food-bank-categorized{display:flex;flex-direction:column;gap:12px;}
 .fb-category{background:#fff;border-radius:16px;box-shadow:0 2px 10px var(--shadow);overflow:hidden;}
 .fb-cat-header{padding:13px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
 .fb-cat-header:active{background:var(--cream2);}
@@ -383,8 +384,9 @@ body{
 .time-range-sep{font-size:13px;color:var(--text-muted);font-weight:800;}
 
 /* ===== MEAL PLANNER ===== */
-.planner-wrap{padding:0 0 24px;display:flex;flex-direction:column;}
-.planner-topbar{background:linear-gradient(135deg,#7AB863,#5A8A48);padding:20px 16px 16px;display:flex;align-items:center;justify-content:space-between;}
+.planner-wrap{padding:16px 16px 24px;display:flex;flex-direction:column;gap:10px;}
+.planner-days{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+.planner-topbar{background:linear-gradient(135deg,#7AB863,#5A8A48);padding:20px 16px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:22px;}
 .planner-title{font-size:18px;font-weight:900;color:#fff;}
 .planner-week-nav{display:flex;align-items:center;gap:6px;}
 .planner-week-label{font-size:12px;color:rgba(255,255,255,0.9);font-weight:700;min-width:110px;text-align:center;}
@@ -392,8 +394,7 @@ body{
 .week-nav-btn:active{background:rgba(255,255,255,0.4);}
 .week-nav-btn svg{width:16px;height:16px;}
 .week-nav-btn:disabled{opacity:0.35;cursor:not-allowed;}
-.planner-days{display:flex;flex-direction:column;gap:0;}
-.planner-day{border-bottom:1.5px solid var(--cream2);}
+.planner-day{background:#fff;border-radius:18px;box-shadow:0 2px 10px var(--shadow);overflow:hidden;}
 .planner-day-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 10px;cursor:pointer;user-select:none;background:#fff;}
 .planner-day-header:active{background:var(--cream2);}
 .planner-day-name{font-size:14px;font-weight:900;color:var(--text-main);}
@@ -411,6 +412,8 @@ body{
 .planner-slot-meta{font-size:11px;color:var(--text-muted);font-weight:600;}
 .planner-slot-empty{font-size:13px;color:#C8B8A8;font-weight:600;font-style:italic;}
 .planner-slot-actions{display:flex;gap:6px;flex-shrink:0;}
+.planner-slot-btns{display:flex;gap:4px;}
+.planner-ing-btn{background:rgba(201,123,74,0.12);color:var(--terra-dark);}
 .planner-assign-btn{background:var(--sage-light);border:none;border-radius:9px;padding:5px 10px;font-family:var(--font);font-size:11px;font-weight:800;color:var(--sage-dark);cursor:pointer;transition:all 0.15s;}
 .planner-assign-btn:active{transform:scale(0.95);}
 .planner-clear-btn{background:var(--cream2);border:none;border-radius:9px;padding:5px 8px;font-family:var(--font);font-size:11px;font-weight:800;color:var(--text-muted);cursor:pointer;}
@@ -545,24 +548,24 @@ body{
 
 <!-- ===== MAIN APP ===== -->
 <div id="screen-main" class="screen">
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <div class="streak-info">
-      <div class="streak-label">Streak</div>
-      <div class="streak-value">
-        <svg class="streak-fire" viewBox="0 0 30 30" fill="none"><path d="M15 3C15 3 20 9 20 14c0 0 2-3 1-6 3 3 5 7 3 12s-6 8-9 8-9-2-11-7 0-9 3-12c-1 3 1 6 1 6C8 9 15 3 15 3Z" fill="#FF8C00"/><path d="M15 10c0 0 3 4 3 7 0 0 1-1.5.5-3C20 16 21 18.5 20 21s-3 4-5 4-5-1.5-6-4 0-5 1.5-7C10 15.5 11 17 11 17c0-3 4-7 4-7Z" fill="#FFD000"/></svg>
-        <span id="streak-num">0</span>
-      </div>
-      <div class="streak-days" id="streak-days-label">days consistent</div>
-    </div>
-    <button class="gear-btn" onclick="switchTab('settings')" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
-  </div>
 
   <!-- HOME TAB -->
   <div class="tab-content active" id="tab-home">
     <div class="dashboard-scroll">
+      <!-- TOP BAR — streak banner, home only -->
+      <div class="top-bar">
+        <div class="streak-info">
+          <div class="streak-label">Streak</div>
+          <div class="streak-value">
+            <svg class="streak-fire" viewBox="0 0 30 30" fill="none"><path d="M15 3C15 3 20 9 20 14c0 0 2-3 1-6 3 3 5 7 3 12s-6 8-9 8-9-2-11-7 0-9 3-12c-1 3 1 6 1 6C8 9 15 3 15 3Z" fill="#FF8C00"/><path d="M15 10c0 0 3 4 3 7 0 0 1-1.5.5-3C20 16 21 18.5 20 21s-3 4-5 4-5-1.5-6-4 0-5 1.5-7C10 15.5 11 17 11 17c0-3 4-7 4-7Z" fill="#FFD000"/></svg>
+            <span id="streak-num">0</span>
+          </div>
+          <div class="streak-days" id="streak-days-label">days consistent</div>
+        </div>
+        <button class="gear-btn" onclick="switchTab('settings')" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
       <!-- Level Badge -->
       <div class="level-badge">
         <svg class="lv-icon-wrap" id="lv-icon" viewBox="0 0 28 28" fill="none"></svg>
@@ -631,24 +634,25 @@ body{
         <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-align:center;margin-top:6px;">Tap to log · Tap again to remove</div>
       </div>
 
-      <div class="stats-row" style="grid-template-columns:1fr;">
-        <div class="stat-card"><svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#C97B4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div class="stat-val" id="stat-best-streak">0</div><div class="stat-lbl">Best streak ever</div></div>
-      </div>
-
-      <!-- Streak Mode Toggle -->
-      <div class="streak-mode-card">
-        <div class="streak-mode-label">Streak based on</div>
-        <div class="streak-mode-toggle">
-          <button class="streak-mode-btn" id="streak-mode-nourish" onclick="setStreakMode('nourish')">
-            5 Meals
-          </button>
-          <button class="streak-mode-btn" id="streak-mode-protein" onclick="setStreakMode('protein')">
-            Protein Goal
-          </button>
+      <!-- Best Streak + Mode Toggle combined -->
+      <div class="streak-mode-card" style="flex-direction:column;align-items:stretch;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="#C97B4A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <div style="font-size:12px;font-weight:800;color:var(--text-muted);">Best streak ever</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:var(--terra-dark);" id="stat-best-streak">0</div>
+        </div>
+        <div style="height:1px;background:var(--cream2);"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="streak-mode-label">Based on</div>
+          <div class="streak-mode-toggle">
+            <button class="streak-mode-btn" id="streak-mode-nourish" onclick="setStreakMode('nourish')">5 Meals</button>
+            <button class="streak-mode-btn" id="streak-mode-protein" onclick="setStreakMode('protein')">Protein Goal</button>
+          </div>
         </div>
       </div>
-      <div class="grass-deco"><svg viewBox="0 0 22 22" fill="none" stroke="#5A8A48" stroke-width="1.5" stroke-linecap="round"><path d="M11 20L11 8"/><path d="M7 13Q11 8 15 13"/><path d="M4 17Q11 11 18 17"/></svg><svg viewBox="0 0 22 22" fill="none" stroke="#5A8A48" stroke-width="1.5" stroke-linecap="round"><path d="M11 20L11 4"/><path d="M8 10Q11 5 14 10"/></svg><svg viewBox="0 0 22 22" fill="none" stroke="#5A8A48" stroke-width="1.5" stroke-linecap="round"><path d="M11 20L11 8"/><path d="M7 13Q11 8 15 13"/><path d="M4 17Q11 11 18 17"/></svg></div>
-    </div>
+      </div>
   </div>
 
   <!-- FOOD BANK TAB -->
@@ -1022,6 +1026,22 @@ body{
     <div class="rps-list" id="rps-list"></div>
   </div>
 </div>
+
+<!-- PLANNER INGREDIENT PICKER -->
+<div class="recipe-picker-overlay" id="planner-ing-overlay" onclick="closePlannerIngPicker(event)">
+  <div class="recipe-picker-sheet">
+    <div class="rps-header">
+      <div class="rps-title" id="planner-ing-title">Add Ingredients</div>
+      <button class="rps-close" onclick="closePlannerIngPicker()">&#x2715;</button>
+    </div>
+    <div class="rps-subtitle">Tap to select · tap again to deselect</div>
+    <div class="rps-list" id="planner-ing-list"></div>
+    <div style="padding:12px 16px 8px;">
+      <button class="modal-btn primary" id="planner-ing-done" onclick="assignIngredients()" style="margin-top:0;">Done</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 // ================================================================
@@ -1674,20 +1694,46 @@ function removeNourishment(slotIndex){
 
 function logMeal(){
   const today=todayStr();
-  if(state.lastLogDate&&state.lastLogDate!==today)state.todayMeals=0;
-  state.lastLogDate=today;state.lastLogTime=Date.now();
-  if(state.todayMeals>=5){showToast("Already completed today's quest!");return;}
-  state.todayMeals++;state.totalMeals++;
+  if(state.todayMeals>=5){showToast("Already completed today's nourishment!");return;}
+  state.todayMeals++;
+  state.totalMeals++;
   const slot=document.getElementById('slot-'+(state.todayMeals-1));
-  slot.classList.add('filled','filled-anim');setTimeout(()=>slot.classList.remove('filled-anim'),400);
+  if(slot){slot.classList.add('filled','filled-anim');setTimeout(()=>slot.classList.remove('filled-anim'),400);}
   fireStageConfetti(false);
-  const sv=document.getElementById('main-char-svg');sv.classList.remove('bounce','spin360');void sv.offsetWidth;sv.classList.add('bounce');setTimeout(()=>sv.classList.remove('bounce'),600);
+  const sv=document.getElementById('main-char-svg');
+  if(sv){sv.classList.remove('bounce','spin360');void sv.offsetWidth;sv.classList.add('bounce');setTimeout(()=>sv.classList.remove('bounce'),600);}
   fireSparks();
-  if(state.todayMeals===5){
-    const prev=state.streak;state.streak++;if(state.streak>state.bestStreak)state.bestStreak=state.streak;saveState();
-    setTimeout(()=>{const sv2=document.getElementById('main-char-svg');sv2.classList.remove('bounce','spin360');void sv2.offsetWidth;sv2.classList.add('spin360');setTimeout(()=>sv2.classList.remove('spin360'),1300);fireStageConfetti(true);fireSparks();setTimeout(()=>fireSparks(),220);setTimeout(()=>fireSparks(),440);setTimeout(()=>openModal('modal-daily'),600);},300);
+  // Only increment streak in nourish mode on 5th meal
+  if(state.todayMeals===5 && (state.streakMode||'nourish')==='nourish'){
+    const prev=state.streak;
+    // Only count once per day
+    if(state.lastLogDate !== today){
+      state.streak++;
+      if(state.streak>state.bestStreak) state.bestStreak=state.streak;
+      state.lastLogDate=today;
+      state.lastLogTime=Date.now();
+    }
+    saveState();
+    setTimeout(()=>{
+      const sv2=document.getElementById('main-char-svg');
+      if(sv2){sv2.classList.remove('bounce','spin360');void sv2.offsetWidth;sv2.classList.add('spin360');setTimeout(()=>sv2.classList.remove('spin360'),1300);}
+      fireStageConfetti(true);fireSparks();
+      setTimeout(()=>fireSparks(),220);setTimeout(()=>fireSparks(),440);
+      setTimeout(()=>openModal('modal-daily'),600);
+    },300);
     setTimeout(()=>checkLevelUp(prev),1500);
-  }else{saveState();}
+  } else if(state.todayMeals===5 && state.streakMode==='protein'){
+    // In protein mode — celebrate completion but don't touch streak or lastLogDate
+    saveState();
+    setTimeout(()=>{
+      const sv2=document.getElementById('main-char-svg');
+      if(sv2){sv2.classList.remove('bounce','spin360');void sv2.offsetWidth;sv2.classList.add('spin360');setTimeout(()=>sv2.classList.remove('spin360'),1300);}
+      fireStageConfetti(true);fireSparks();
+      setTimeout(()=>fireSparks(),220);setTimeout(()=>fireSparks(),440);
+    },300);
+  } else {
+    saveState();
+  }
   scheduleReminder();updateDashboard();updateReminderNextLabel();
 }
 function checkLevelUp(prev){const pLv=getLevelInfo(prev),nLv=getLevelInfo(state.streak);if(nLv.num>pLv.num&&nLv.milestone&&!state.shownLevels.includes(nLv.num)){state.shownLevels.push(nLv.num);saveState();setTimeout(()=>{document.getElementById('levelup-art').innerHTML=nLv.iconSVG();document.getElementById('levelup-body').textContent=nLv.reward;openModal('modal-levelup');playLevelUpSound();},700);}}
@@ -1977,21 +2023,39 @@ function buildPlannerHTML(plan, isCurrentWeek, today){
     var isOpen = plannerOpenDay===day;
     var slotsHTML = '';
     SLOTS.forEach(function(slot){
-      var recipe = dayPlan[slot];
+      var slotEntry = dayPlan[slot];
+      var isObj = slotEntry && typeof slotEntry === 'object';
+      var isIngType = isObj && slotEntry.type === 'ingredients';
+      var isRecipeType = isObj && (slotEntry.type === 'recipe' || slotEntry.name);
+
+      var contentHTML = '';
+      if(isIngType && slotEntry.items && slotEntry.items.length > 0){
+        contentHTML = slotEntry.items.map(function(it){
+          return '<div class="planner-slot-name">'+it.name+'</div>';
+        }).join('');
+        var totalP = slotEntry.items.reduce(function(s,it){return s+(it.protein||0);},0);
+        if(totalP > 0) contentHTML += '<div class="planner-slot-meta">'+totalP+'g protein</div>';
+      } else if(isRecipeType){
+        contentHTML = '<div class="planner-slot-name">'+slotEntry.name+'</div><div class="planner-slot-meta">'+slotEntry.serving+'</div>';
+      } else {
+        contentHTML = '<div class="planner-slot-empty"></div>';
+      }
+
+      var actionHTML = '';
+      if(slotEntry){
+        actionHTML = '<button class="planner-assign-btn" onclick="openSlotPicker(\''+day+'\',\''+slot+'\')">Change</button>' +
+                     '<button class="planner-clear-btn" onclick="clearPlannerSlot(\''+day+'\',\''+slot+'\')">&#x2715;</button>';
+      } else {
+        actionHTML = '<div class="planner-slot-btns">' +
+          '<button class="planner-assign-btn" onclick="openRecipePicker(\''+day+'\',\''+slot+'\')">Recipe</button>' +
+          '<button class="planner-assign-btn planner-ing-btn" onclick="openPlannerIngPicker(\''+day+'\',\''+slot+'\')">Ingredients</button>' +
+        '</div>';
+      }
       var labelColor = SLOT_COLORS[slot];
-      var contentHTML = recipe
-        ? '<div class="planner-slot-name">'+recipe.name+'</div><div class="planner-slot-meta">'+recipe.serving+' &middot; '+recipe.protein+'</div>'
-        : '<div class="planner-slot-empty"></div>';
-      var clearBtn = recipe
-        ? '<button class="planner-clear-btn" onclick="clearPlannerSlot(\''+day+'\',\''+slot+'\')">&#x2715;</button>'
-        : '';
       slotsHTML += '<div class="planner-slot">' +
         '<div class="planner-slot-label" style="color:'+labelColor+';">'+slot+'</div>' +
         '<div class="planner-slot-content">'+contentHTML+'</div>' +
-        '<div class="planner-slot-actions">' +
-          '<button class="planner-assign-btn" onclick="openRecipePicker(\''+day+'\',\''+slot+'\')">'+( recipe?'Change':'Assign')+'</button>' +
-          clearBtn +
-        '</div>' +
+        '<div class="planner-slot-actions">'+actionHTML+'</div>' +
       '</div>';
     });
     var summaryText = filled===0 ? 'Nothing planned' : filled===SLOTS.length ? 'All slots planned' : (filled+' of '+SLOTS.length+' slots filled');
@@ -2069,12 +2133,82 @@ function assignRecipe(idx){
   if(!state.mealPlan)state.mealPlan={};
   if(!state.mealPlan[weekKey])state.mealPlan[weekKey]={};
   if(!state.mealPlan[weekKey][day])state.mealPlan[weekKey][day]={};
-  state.mealPlan[weekKey][day][slot]=state.foodBank[idx];
+  state.mealPlan[weekKey][day][slot]=Object.assign({type:'recipe'},state.foodBank[idx]);
   saveState();
   document.getElementById('recipe-picker-overlay').classList.remove('active');
   pickerContext=null;
   renderPlanner();
   showToast('Recipe assigned!');
+}
+
+// ── Planner ingredient picker ────────────────────────────────────
+var plannerIngSelected = [];
+
+function openPlannerIngPicker(day, slot){
+  pickerContext = {weekKey:getWeekKey(), day:day, slot:slot};
+  plannerIngSelected = [];
+  var lib = state.ingredientLibrary || [];
+  var title = document.getElementById('planner-ing-title');
+  var list = document.getElementById('planner-ing-list');
+  if(title) title.textContent = slot+' — '+day;
+  if(!list) return;
+  if(lib.length === 0){
+    list.innerHTML = '<div class="rps-empty">No ingredients in your library yet.<br>Add some in the Food Bank → My Ingredients.</div>';
+  } else {
+    list.innerHTML = lib.map(function(ing, i){
+      return '<div class="rps-item" id="planner-ing-item-'+i+'" onclick="togglePlannerIng('+i+',this)">' +
+        '<div class="rps-item-info">' +
+          '<div class="rps-item-name">'+ing.name+(ing.brand?' · '+ing.brand:'')+'</div>' +
+          '<div class="rps-item-meta">'+ing.serving+'</div>' +
+        '</div>' +
+        '<div class="rps-item-protein">'+ing.protein+'g</div>' +
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('planner-ing-overlay').classList.add('active');
+}
+
+function togglePlannerIng(libIdx, el){
+  var lib = state.ingredientLibrary || [];
+  var ing = lib[libIdx];
+  var existingIdx = plannerIngSelected.findIndex(function(s){ return s._libIdx === libIdx; });
+  if(existingIdx >= 0){
+    plannerIngSelected.splice(existingIdx, 1);
+    el.classList.remove('selected');
+  } else {
+    plannerIngSelected.push({_libIdx:libIdx, name:ing.name, brand:ing.brand, protein:ing.protein, serving:ing.serving});
+    el.classList.add('selected');
+  }
+  var doneBtn = document.getElementById('planner-ing-done');
+  if(doneBtn) doneBtn.textContent = plannerIngSelected.length > 0 ? 'Done ('+plannerIngSelected.length+' selected)' : 'Done';
+}
+
+function assignIngredients(){
+  if(!pickerContext) return;
+  if(plannerIngSelected.length === 0){ showToast('Select at least one ingredient'); return; }
+  var{weekKey,day,slot} = pickerContext;
+  if(!state.mealPlan) state.mealPlan={};
+  if(!state.mealPlan[weekKey]) state.mealPlan[weekKey]={};
+  if(!state.mealPlan[weekKey][day]) state.mealPlan[weekKey][day]={};
+  state.mealPlan[weekKey][day][slot] = {type:'ingredients', items: plannerIngSelected.slice()};
+  saveState();
+  document.getElementById('planner-ing-overlay').classList.remove('active');
+  pickerContext = null;
+  plannerIngSelected = [];
+  renderPlanner();
+  showToast('Ingredients assigned!');
+}
+
+function closePlannerIngPicker(e){
+  if(e && e.target !== document.getElementById('planner-ing-overlay')) return;
+  document.getElementById('planner-ing-overlay').classList.remove('active');
+  pickerContext = null;
+  plannerIngSelected = [];
+}
+
+function openSlotPicker(day, slot){
+  // When changing an existing slot, just open recipe picker — user can clear and re-add ingredients if needed
+  openRecipePicker(day, slot);
 }
 
 function clearPlannerSlot(day,slot){
