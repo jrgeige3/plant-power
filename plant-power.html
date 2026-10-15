@@ -20,7 +20,7 @@ h1{font-size:20px;margin:0 0 16px}
 .bar{height:12px;background:var(--track);border-radius:99px;overflow:hidden;margin:10px 0 6px}
 .bar>div{height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-input{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;min-width:0}
+input,select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;min-width:0}
 button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);padding:10px 12px}
 button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
 .chip{padding:8px 12px;font-size:14px}
@@ -32,11 +32,15 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .hist span{display:block;background:var(--track);border-radius:4px 4px 0 0;margin-bottom:4px}
 .hist .on span{background:var(--accent)}
 .day{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.cell{width:18px;height:18px;border-radius:50%;background:var(--track);justify-self:center}.cell.on{background:var(--accent)}
 </style>
 </head>
 <body>
 <main>
-  <h1>Protein Tracker</h1>
+  <h1>Daily Tracker</h1>
+  <div class="tabs"><button id="tabP" class="on">Protein</button><button id="tabH">Habits</button><button id="tabW">Workouts</button></div>
+  <div id="pageProtein">
 
   <div class="card">
     <div class="day">
@@ -87,14 +91,61 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     </div>
     <p class="muted" style="margin:10px 0 0">Saved on this device in your browser.</p>
   </div>
+  </div>
+
+  <div id="pageHabits" style="display:none">
+    <div class="card">
+      <div class="day">
+        <button id="hprev" aria-label="Previous day">&larr;</button>
+        <strong id="hLabel"></strong>
+        <button id="hnext" aria-label="Next day">&rarr;</button>
+      </div>
+      <div class="muted" id="hSummary" style="text-align:center;margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <strong>My habits</strong>
+      <div id="habitList"></div>
+      <div class="muted" style="margin-top:12px">New habit and goal</div>
+      <div class="row" style="margin-top:6px">
+        <select id="hfreq" style="flex:1 1 100%" aria-label="Goal"></select>
+        <input id="hname" placeholder="New habit (e.g. Walk, Read)" style="flex:1">
+        <button class="primary" id="addHabit">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <strong>Last 7 days</strong>
+      <div id="habitGrid"></div>
+    </div>
+  </div>
+
+  <div id="pageWorkouts" style="display:none">
+    <div class="card">
+      <strong>Add exercise</strong>
+      <div class="row">
+        <input id="exname" placeholder="Exercise (e.g. Bench press)" style="flex:1 1 100%">
+        <input id="exsets" type="number" inputmode="numeric" min="0" placeholder="Sets" style="flex:1">
+        <input id="exreps" type="number" inputmode="numeric" min="0" placeholder="Reps" style="flex:1">
+        <input id="exweight" placeholder="Weight" style="flex:1">
+      </div>
+      <div class="row">
+        <select id="excat" style="flex:1 1 100%"><option value="Upper body">Upper body</option><option value="Lower body">Lower body</option></select>
+        <input id="exnote" placeholder="Notes (optional)" style="flex:1">
+        <button class="primary" id="addEx">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <strong>My exercises</strong>
+      <div id="exList"></div>
+    </div>
+  </div>
 </main>
 
 <script>
-let S={goal:120,days:{},foods:[]};
+let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[]};
 try{const r=localStorage.getItem("protein-tracker");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem("protein-tracker",JSON.stringify(S))}catch(e){}};
 const key=d=>{const o=new Date(d.getTime()-d.getTimezoneOffset()*60000);return o.toISOString().slice(0,10)};
-let cur=new Date();
+let cur=new Date();let tab="protein";
 const $=id=>document.getElementById(id);
 const entries=(d)=>S.days[key(d)]||[];
 const sum=d=>entries(d).reduce((a,e)=>a+e.g,0);
@@ -102,6 +153,116 @@ function addEntry(name,g){
   g=parseFloat(g);if(!(g>0))return;
   const k=key(cur);(S.days[k]=S.days[k]||[]).push({name:name||"Protein",g});
   save();render();
+}
+function showTab(){
+  $("pageProtein").style.display=tab==="protein"?"block":"none";
+  $("pageHabits").style.display=tab==="habits"?"block":"none";
+  $("pageWorkouts").style.display=tab==="workouts"?"block":"none";
+  $("tabP").classList.toggle("on",tab==="protein");$("tabH").classList.toggle("on",tab==="habits");$("tabW").classList.toggle("on",tab==="workouts");
+}
+const FREQ=[["Daily",0],["Once a week",1],["Twice a week",2],["3 times a week",3],["4 times a week",4],["5 times a week",5],["6 times a week",6]];
+function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function countWeek(id,ws){const L=S.hlog[id]||{};let c=0;for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);if(L[key(d)])c++}return c}
+function weekStreak(id,n){
+  let ws=weekStart(new Date()),w=0;
+  if(countWeek(id,ws)>=n)w++;
+  for(let i=0;i<260;i++){ws.setDate(ws.getDate()-7);if(countWeek(id,ws)>=n)w++;else break}
+  return w;
+}
+function streak(id){
+  const L=S.hlog[id]||{};let d=new Date(),n=0;
+  if(!L[key(d)])d.setDate(d.getDate()-1);
+  while(L[key(d)]){n++;d.setDate(d.getDate()-1)}
+  return n;
+}
+function renderHabits(){
+  const today=key(new Date())===key(cur);
+  $("hLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  $("hnext").disabled=today;
+  const k=key(cur),L=$("habitList");L.innerHTML="";
+  const done=S.habits.filter(h=>(S.hlog[h.id]||{})[k]).length;
+  $("hSummary").textContent=S.habits.length?done+" of "+S.habits.length+" done":"";
+  if(!S.habits.length)L.innerHTML='<div class="muted" style="margin-top:8px">No habits yet. Add one below.</div>';
+  S.habits.forEach((h,i)=>{
+    const d=document.createElement("div");d.className="item";
+    const lb=document.createElement("label");lb.style.cssText="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;min-width:0";
+    const c=document.createElement("input");c.type="checkbox";c.style.cssText="width:20px;height:20px;padding:0;accent-color:var(--accent)";
+    c.checked=!!(S.hlog[h.id]||{})[k];
+    c.onchange=()=>{const l=S.hlog[h.id]=S.hlog[h.id]||{};if(c.checked)l[k]=true;else delete l[k];save();render()};
+    const tx=document.createElement("div");
+    const s=document.createElement("div");s.textContent=h.name;
+    const sub=document.createElement("div");sub.className="muted";sub.style.fontSize="13px";
+    const pw=h.perWeek||0;
+    if(pw){const wk=weekStart(cur),cnt=countWeek(h.id,wk),ws=weekStreak(h.id,pw);sub.textContent=cnt+"/"+pw+(key(wk)===key(weekStart(new Date()))?" this week":" that week")+(ws?" \u00b7 "+ws+"-week streak":"")}
+    else{const n=streak(h.id);sub.textContent=n?"Daily \u00b7 "+n+"-day streak":"Daily"}
+    tx.append(s,sub);lb.append(c,tx);
+    const sel=document.createElement("select");sel.style.cssText="font-size:13px;padding:6px";sel.setAttribute("aria-label","Goal");
+    FREQ.forEach(([t,v])=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o)});
+    sel.value=pw;sel.onchange=()=>{h.perWeek=parseInt(sel.value,10);save();render()};
+    const st=sel;
+    const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete habit");
+    x.onclick=()=>{S.habits.splice(i,1);delete S.hlog[h.id];save();render()};
+    d.append(lb,st,x);L.appendChild(d);
+  });
+  const G=$("habitGrid");G.innerHTML="";
+  if(!S.habits.length){G.innerHTML='<div class="muted" style="margin-top:8px">Nothing to show yet.</div>';return}
+  const gs="display:grid;grid-template-columns:1fr repeat(7,22px);gap:6px;align-items:center;font-size:13px;margin-top:8px";
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d)}
+  const hd=document.createElement("div");hd.style.cssText=gs;hd.appendChild(document.createElement("span"));
+  days.forEach(d=>{const s=document.createElement("span");s.className="muted";s.style.textAlign="center";s.textContent=d.toLocaleDateString(undefined,{weekday:"narrow"});hd.appendChild(s)});
+  G.appendChild(hd);
+  S.habits.forEach(h=>{
+    const r=document.createElement("div");r.style.cssText=gs;
+    const n=document.createElement("span");n.style.cssText="overflow:hidden;text-overflow:ellipsis;white-space:nowrap";n.textContent=h.name;r.appendChild(n);
+    days.forEach(d=>{const c=document.createElement("div");c.className="cell"+((S.hlog[h.id]||{})[key(d)]?" on":"");r.appendChild(c)});
+    G.appendChild(r);
+  });
+}
+function exDetail(e){
+  const p=[];if(e.sets)p.push(e.sets+" sets");if(e.reps)p.push(e.reps+" reps");
+  let t=p.join(" \u00d7 ");if(e.weight)t+=(t?" \u00b7 ":"")+e.weight;return t;
+}
+let editId=null;
+function renderWorkouts(){
+  const L=$("exList");L.innerHTML="";
+  if(!S.exercises.length){L.innerHTML='<div class="muted" style="margin-top:8px">No exercises yet.</div>';return}
+  ["Upper body","Lower body","Uncategorized"].forEach(cat=>{
+    const grp=S.exercises.filter(e=>(e.cat||"Uncategorized")===cat);
+    if(!grp.length)return;
+    const hd=document.createElement("div");hd.textContent=cat;hd.className="muted";hd.style.cssText="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em;margin-top:14px";
+    L.appendChild(hd);
+    grp.forEach(e=>{
+    const d=document.createElement("div");d.className="item";d.style.alignItems="flex-start";
+    if(editId===e.id){
+      d.style.display="block";
+      const w=document.createElement("div");w.className="row";w.style.marginTop="0";
+      const mk=(ph,val,num,fl)=>{const inp=document.createElement("input");inp.placeholder=ph;inp.value=val==null?"":val;if(num){inp.type="number";inp.inputMode="numeric";inp.min="0"}inp.style.flex=fl;return inp};
+      const n=mk("Exercise",e.name,false,"1 1 100%"),s=mk("Sets",e.sets||"",true,"1"),r=mk("Reps",e.reps||"",true,"1"),wt=mk("Weight",e.weight,false,"1"),nt=mk("Notes",e.note,false,"1 1 100%");
+      const ct=document.createElement("select");ct.style.flex="1 1 100%";["Upper body","Lower body"].forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;ct.appendChild(o)});ct.value=e.cat||"Upper body";
+      const sv=document.createElement("button");sv.className="primary";sv.textContent="Save";
+      const cn=document.createElement("button");cn.textContent="Cancel";
+      sv.onclick=()=>{
+        const nm=n.value.trim();if(!nm)return;
+        const a=parseInt(s.value,10),b=parseInt(r.value,10);
+        e.name=nm;e.sets=a>0?a:0;e.reps=b>0?b:0;e.weight=wt.value.trim();e.note=nt.value.trim();e.cat=ct.value;
+        editId=null;save();render();
+      };
+      cn.onclick=()=>{editId=null;render()};
+      w.append(n,ct,s,r,wt,nt,sv,cn);d.appendChild(w);
+    }else{
+      const a=document.createElement("div");a.style.flex="1";a.style.minWidth="0";
+      const t=document.createElement("div");t.style.fontWeight="600";t.textContent=e.name;a.appendChild(t);
+      const dt=exDetail(e);if(dt){const q=document.createElement("div");q.textContent=dt;a.appendChild(q)}
+      if(e.note){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=e.note;a.appendChild(q)}
+      const b=document.createElement("div");b.style.whiteSpace="nowrap";
+      const ed=document.createElement("button");ed.textContent="Edit";ed.onclick=()=>{editId=e.id;render()};
+      const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete exercise");
+      x.onclick=()=>{S.exercises.splice(S.exercises.indexOf(e),1);save();render()};
+      b.append(ed,x);d.append(a,b);
+    }
+    L.appendChild(d);
+    });
+  });
 }
 function renderFoods(){
   const L=$("foods");L.innerHTML="";
@@ -117,7 +278,7 @@ function renderFoods(){
   });
 }
 function render(){
-  renderFoods();
+  showTab();renderHabits();renderWorkouts();renderFoods();
   const today=key(new Date())===key(cur);
   $("dayLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("next").disabled=today;
@@ -155,6 +316,15 @@ $("saveFood").onclick=()=>{
   $("fname").value="";$("fgrams").value="";
   save();render();
 };
+FREQ.forEach(([t,v])=>{const o=document.createElement("option");o.value=v;o.textContent=t;$("hfreq").appendChild(o)});
+$("addHabit").onclick=()=>{const n=$("hname").value.trim();if(!n)return;S.habits.push({id:"h"+Date.now(),name:n,perWeek:parseInt($("hfreq").value,10)||0});$("hname").value="";save();render()};
+$("hname").addEventListener("keydown",e=>{if(e.key==="Enter")$("addHabit").click()});
+$("tabP").onclick=()=>{tab="protein";render()};
+$("tabH").onclick=()=>{tab="habits";render()};
+$("tabW").onclick=()=>{tab="workouts";render()};
+$("addEx").onclick=()=>{const n=$("exname").value.trim();if(!n)return;const a=parseInt($("exsets").value,10),b=parseInt($("exreps").value,10);S.exercises.push({id:"e"+Date.now(),name:n,sets:a>0?a:0,reps:b>0?b:0,weight:$("exweight").value.trim(),note:$("exnote").value.trim(),cat:$("excat").value});["exname","exsets","exreps","exweight","exnote"].forEach(id=>{$(id).value=""});save();render()};
+$("hprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
+$("hnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
 $("prev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
 $("next").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
 $("goal").value=S.goal;
