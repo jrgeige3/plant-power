@@ -48,8 +48,8 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <strong id="dayLabel"></strong>
       <button id="next" aria-label="Next day">&rarr;</button>
     </div>
+    <div style="display:flex;justify-content:center;margin-top:12px"><svg width="170" height="170" viewBox="0 0 160 160" role="img" aria-label="Protein goal progress"><circle cx="80" cy="80" r="64" fill="none" stroke="var(--track)" stroke-width="16"/><circle id="prArc" cx="80" cy="80" r="64" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="0 402.12" transform="rotate(-90 80 80)" style="transition:stroke-dasharray .3s"/><text id="prPct" x="80" y="90" text-anchor="middle" font-size="30" font-weight="700" fill="var(--text)">0%</text></svg></div>
     <div style="text-align:center;margin-top:12px"><span class="big" id="total">0</span><span class="muted"> / <span id="goalTxt">120</span> g</span></div>
-    <div class="bar"><div id="fill" style="width:0"></div></div>
     <div class="muted" id="remain"></div>
   </div>
 
@@ -64,19 +64,23 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   </div>
 
   <div class="card">
-    <strong>My foods</strong>
-    <div class="muted">Save foods you eat often, then log them in one tap.</div>
+    <div class="day"><strong id="foodsTitle">My foods</strong><button id="foodsToggle" aria-expanded="true">Hide</button></div>
+    <div id="foodsBody">
+    <div class="muted" style="margin-top:8px">Save foods you eat often, then log them in one tap.</div>
     <div class="row">
       <input id="fname" placeholder="Food name" style="flex:2">
       <input id="fgrams" type="number" inputmode="decimal" min="0" placeholder="g protein" style="flex:1">
       <button id="saveFood">Save</button>
     </div>
     <div id="foods"></div>
+    </div>
   </div>
 
   <div class="card">
-    <strong>Entries</strong>
+    <div class="day"><strong id="entTitle">Entries</strong><button id="entToggle" aria-expanded="true">Hide</button></div>
+    <div id="entBody">
     <div id="list"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -109,13 +113,15 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <div class="muted" id="hSummary" style="text-align:center;margin-top:8px"></div>
     </div>
     <div class="card">
-      <strong>My habits</strong>
+      <div class="day"><strong id="hTitle">My habits</strong><button id="hToggle" aria-expanded="true">Hide</button></div>
+      <div id="hBody">
       <div id="habitList"></div>
       <div class="muted" style="margin-top:12px">New habit and goal</div>
       <div class="row" style="margin-top:6px">
         <select id="hfreq" style="flex:1 1 100%" aria-label="Goal"></select>
         <input id="hname" placeholder="New habit (e.g. Walk, Read)" style="flex:1">
         <button class="primary" id="addHabit">Add</button>
+      </div>
       </div>
     </div>
     <div class="card">
@@ -146,8 +152,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     <div class="card">
       <strong id="bTitle">Build a workout</strong>
       <div class="row">
-        <input id="bname" placeholder="Workout name (e.g. Push day)" style="flex:2">
-        <select id="bday" style="flex:1" aria-label="Day of week"></select>
+        <input id="bname" placeholder="Workout name (e.g. Push day)" style="flex:1">
       </div>
       <div class="muted" style="margin-top:12px">Pick exercises from My exercises</div>
       <div id="bPick"></div>
@@ -192,15 +197,17 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     </div>
     <div class="card">
       <strong>Add water</strong>
-      <div class="row" id="wtQuick"></div>
       <div class="row">
         <input id="wtamt" type="number" inputmode="decimal" min="0" placeholder="Custom amount" style="flex:1">
         <button class="primary" id="wtadd">Add</button>
       </div>
+      <div class="muted" style="font-size:13px;margin-top:8px">The time is added automatically when you log water.</div>
     </div>
     <div class="card">
-      <strong>Entries</strong>
+      <div class="day"><strong id="wtTitle">Entries</strong><button id="wtToggle" aria-expanded="true">Hide</button></div>
+      <div id="wtBody">
       <div id="wtList"></div>
+      </div>
     </div>
     <div class="card">
       <strong>Last 7 days</strong>
@@ -279,6 +286,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 <script>
 let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}},mood:{}};
 try{const r=localStorage.getItem("protein-tracker");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+try{Object.keys(S.water.days).forEach(k=>{S.water.days[k]=S.water.days[k].map(x=>typeof x==="number"?{ml:x}:x)})}catch(e){}
 const save=()=>{try{localStorage.setItem("protein-tracker",JSON.stringify(S))}catch(e){}};
 const key=d=>{const o=new Date(d.getTime()-d.getTimezoneOffset()*60000);return o.toISOString().slice(0,10)};
 let cur=new Date();let tab="habits";
@@ -287,7 +295,7 @@ const entries=(d)=>S.days[key(d)]||[];
 const sum=d=>entries(d).reduce((a,e)=>a+e.g,0);
 function addEntry(name,g,cat){
   g=parseFloat(g);if(!(g>0))return;
-  const k=key(cur);(S.days[k]=S.days[k]||[]).push({name:name||"Protein",g,cat:cat||$("cat").value});
+  const k=key(cur);(S.days[k]=S.days[k]||[]).push({name:name||"Protein",g,cat:cat||$("cat").value,t:nowT()});
   save();render();
 }
 function showTab(){
@@ -318,6 +326,11 @@ function renderHabits(){
   const today=key(new Date())===key(cur);
   $("hLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("hnext").disabled=today;
+  const hopen=S.habitsOpen!==false;
+  $("hBody").style.display=hopen?"block":"none";
+  $("hToggle").textContent=hopen?"Hide":"Show";
+  $("hToggle").setAttribute("aria-expanded",hopen);
+  $("hTitle").textContent="My habits"+(hopen||!S.habits.length?"":" ("+S.habits.length+")");
   const k=key(cur),L=$("habitList");L.innerHTML="";
   const done=S.habits.filter(h=>(S.hlog[h.id]||{})[k]).length;
   $("hSummary").textContent=S.habits.length?done+" of "+S.habits.length+" done":"";
@@ -380,33 +393,36 @@ const toU=ml=>S.water.unit==="oz"?ml/29.5735:ml;
 const fromU=v=>S.water.unit==="oz"?v*29.5735:v;
 const fmtU=ml=>Math.round(toU(ml)*10)/10;
 const uLabel=()=>S.water.unit==="oz"?"fl oz":"ml";
-const wTotal=d=>(S.water.days[key(d)]||[]).reduce((a,x)=>a+x,0);
+const wTotal=d=>(S.water.days[key(d)]||[]).reduce((a,x)=>a+x.ml,0);
+const fmtT=t=>{const p=t.split(":").map(Number);return new Date(2000,0,1,p[0],p[1]).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"})};
+const nowT=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
 function addWater(ml){
   ml=Math.round(ml);if(!(ml>0))return;
-  const k=key(cur);(S.water.days[k]=S.water.days[k]||[]).push(ml);save();render();
+  const k=key(cur);(S.water.days[k]=S.water.days[k]||[]).push({ml:ml,t:nowT()});save();render();
 }
 function renderWater(){
   const W=S.water,today=key(new Date())===key(cur);
   $("wtLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("wtnext").disabled=today;
+  const wopen=S.wtOpen!==false;
+  $("wtBody").style.display=wopen?"block":"none";
+  $("wtToggle").textContent=wopen?"Hide":"Show";
+  $("wtToggle").setAttribute("aria-expanded",wopen);
+  $("wtTitle").textContent="Entries"+(wopen?"":" ("+(S.water.days[key(cur)]||[]).length+")");
   const t=wTotal(cur);
   $("wtTotal").textContent=fmtU(t);
   $("wtGoal").textContent=fmtU(W.goal)+" "+uLabel();
   const p=t/W.goal;$("wtArc").setAttribute("stroke-dasharray",(Math.min(1,p)*402.12)+" 402.12");$("wtArc").style.opacity=p>0?1:0;$("wtPct").textContent=Math.round(p*100)+"%";
   $("wtRemain").textContent=t>=W.goal?"Goal reached":fmtU(W.goal-t)+" "+uLabel()+" to go";
-  const Q=$("wtQuick");Q.innerHTML="";
-  (W.unit==="oz"?[8,12,16,20]:[250,330,500,750]).forEach(v=>{
-    const b=document.createElement("button");b.className="chip";b.textContent="+"+v+" "+uLabel();
-    b.onclick=()=>addWater(fromU(v));Q.appendChild(b);
-  });
-  $("wtamt").placeholder="Custom ("+uLabel()+")";
+  $("wtamt").placeholder="Amount ("+uLabel()+")";
   $("wtunit").value=W.unit;
   $("wtgoal").value=fmtU(W.goal);
   const es=W.days[key(cur)]||[],L=$("wtList");L.innerHTML="";
   if(!es.length)L.innerHTML='<div class="muted" style="margin-top:8px">Nothing logged yet.</div>';
-  es.forEach((ml,i)=>{
+  es.map((e,i)=>[e,i]).sort((p,q)=>(p[0].t||"")<(q[0].t||"")?-1:(p[0].t||"")>(q[0].t||"")?1:p[1]-q[1]).forEach(([e,i])=>{const ml=e.ml;
     const d=document.createElement("div");d.className="item";
     const a=document.createElement("span");a.textContent=fmtU(ml)+" "+uLabel();
+    if(e.t){const tm=document.createElement("span");tm.className="muted";tm.textContent=" \u00b7 "+fmtT(e.t);a.appendChild(tm)}
     const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete");
     x.onclick=()=>{es.splice(i,1);save();render()};
     d.append(a,x);L.appendChild(d);
@@ -441,13 +457,7 @@ function renderPlans(){
   $("bcancel").style.display=bEdit?"inline-block":"none";
   const L=$("planList");L.innerHTML="";
   if(!S.plans.length){L.innerHTML='<div class="muted" style="margin-top:8px">No workouts saved yet.</div>';return}
-  const td=dayIdx(new Date());
-  DAYS.forEach((dn,di)=>{
-    const grp=S.plans.filter(p=>p.day===di);
-    if(!grp.length)return;
-    const hd=document.createElement("div");hd.textContent=dn+(di===td?" \u00b7 Today":"");hd.className="muted";
-    hd.style.cssText="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em;margin-top:14px"+(di===td?";color:var(--accent)":"");
-    L.appendChild(hd);
+  [S.plans].forEach(grp=>{
     grp.forEach(p=>{
       const d=document.createElement("div");d.className="item";d.style.alignItems="flex-start";
       const a=document.createElement("div");a.style.flex="1";a.style.minWidth="0";
@@ -457,14 +467,14 @@ function renderPlans(){
       items.forEach(e=>{const r=document.createElement("div");r.style.cssText="font-size:14px;margin-top:4px";const dt=exDetail(e);r.textContent=e.name+(dt?" \u00b7 "+dt:"");a.appendChild(r)});
       const b=document.createElement("div");b.style.whiteSpace="nowrap";
       const ed=document.createElement("button");ed.textContent="Edit";
-      ed.onclick=()=>{bEdit=p.id;bSel=new Set(p.ex);$("bname").value=p.name;$("bday").value=p.day;$("bMsg").textContent="";render();$("bname").scrollIntoView({behavior:"smooth",block:"center"})};
+      ed.onclick=()=>{bEdit=p.id;bSel=new Set(p.ex);$("bname").value=p.name;$("bMsg").textContent="";S.wkOpen=S.wkOpen||{};S.wkOpen[2]=true;render();$("bname").scrollIntoView({behavior:"smooth",block:"center"})};
       const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete workout");
       x.onclick=()=>{S.plans.splice(S.plans.indexOf(p),1);if(bEdit===p.id)resetBuilder();save();render()};
       b.append(ed,x);d.append(a,b);L.appendChild(d);
     });
   });
 }
-let pics=[],picDB=null,openId=null;
+let pics=[],picDB=null,openId=null,delId=null,ppArm=false;
 function openDB(){return new Promise(res=>{try{const r=indexedDB.open("tracker",1);r.onupgradeneeded=()=>r.result.createObjectStore("pics",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function dbAll(){return new Promise(res=>{if(!picDB)return res([]);try{const q=picDB.transaction("pics").objectStore("pics").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>res([])}catch(e){res([])}})}
 function dbPut(p){return new Promise(res=>{if(!picDB)return res(false);try{const t=picDB.transaction("pics","readwrite");t.objectStore("pics").put(p);t.oncomplete=()=>res(true);t.onerror=()=>res(false)}catch(e){res(false)}})}
@@ -479,7 +489,7 @@ function shrink(file){return new Promise((res,rej)=>{
   fr.readAsDataURL(file);
 })}
 function fmtDate(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}
-function openPic(p){openId=p.id;$("ppImg").src=p.img;$("ppCap").textContent=fmtDate(p.date)+(p.note?" \u00b7 "+p.note:"");$("ppView").style.display="flex"}
+function openPic(p){ppArm=false;$("ppDel").textContent="Delete";openId=p.id;$("ppImg").src=p.img;$("ppCap").textContent=fmtDate(p.date)+(p.note?" \u00b7 "+p.note:"");$("ppView").style.display="flex"}
 function renderPics(){
   updCmp();const G=$("ppGrid");G.innerHTML="";
   if(!pics.length){G.style.display="block";G.innerHTML='<div class="muted">No photos yet.</div>';return}
@@ -496,7 +506,22 @@ function renderPics(){
       if(i>=0)cmpSel.splice(i,1);else{if(cmpSel.length>=2)cmpSel.shift();cmpSel.push(p.id)}
       renderPics();
     };
-    G.appendChild(w);
+    w.style.width="100%";
+    const box=document.createElement("div");box.style.position="relative";box.appendChild(w);
+    if(!cmp){
+      const x=document.createElement("button");x.textContent="\u2715";x.setAttribute("aria-label","Delete photo");
+      x.style.cssText="position:absolute;top:6px;right:6px;width:28px;height:28px;padding:0;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:0;line-height:1";
+      x.onclick=e=>{e.stopPropagation();delId=p.id;renderPics()};
+      box.appendChild(x);
+    }
+    if(delId===p.id&&!cmp){
+      const o=document.createElement("div");o.style.cssText="position:absolute;top:0;left:0;right:0;aspect-ratio:3/4;background:rgba(0,0,0,.75);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px";
+      const yes=document.createElement("button");yes.textContent="Delete photo";yes.style.color="var(--danger)";
+      yes.onclick=async()=>{await dbDel(p.id);pics=pics.filter(q=>q.id!==p.id);cmpSel=cmpSel.filter(i=>i!==p.id);delId=null;renderPics()};
+      const no=document.createElement("button");no.textContent="Cancel";no.onclick=()=>{delId=null;renderPics()};
+      o.append(yes,no);box.appendChild(o);
+    }
+    G.appendChild(box);
   });
 }
 let cmp=false,cmpSel=[];
@@ -563,7 +588,7 @@ const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
 function dKeys(n){const a=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);a.push(key(d))}return a}
 function moodDay(k){const m=S.mood[k]||{};const v=[m.am&&m.am.v,m.pm&&m.pm.v].filter(Boolean);return v.length?mean(v):null}
 const protG=k=>(S.days[k]||[]).reduce((a,e)=>a+e.g,0);
-const waterMl=k=>(S.water.days[k]||[]).reduce((a,x)=>a+x,0);
+const waterMl=k=>(S.water.days[k]||[]).reduce((a,x)=>a+x.ml,0);
 function inRow(host,label,val,html){
   const r=document.createElement("div");r.className="item";
   const a=document.createElement("span");a.textContent=label;
@@ -636,6 +661,42 @@ function renderInsight(){
   const both=ks.filter(k=>{const m=S.mood[k]||{};return m.am&&m.am.v&&m.pm&&m.pm.v});
   if(both.length>=3){let up=0,same=0,dn=0;both.forEach(k=>{const m=S.mood[k],d=m.pm.v-m.am.v;if(d>0)up++;else if(d<0)dn++;else same++});inRow(AP,"Evening vs morning","Better "+up+" \u00b7 same "+same+" \u00b7 lower "+dn+" days")}
 }
+function renderToggles(){
+  const fo=S.foodsOpen!==false,eo=S.entOpen!==false;
+  $("foodsBody").style.display=fo?"block":"none";
+  $("foodsToggle").textContent=fo?"Hide":"Show";
+  $("foodsToggle").setAttribute("aria-expanded",fo);
+  $("foodsTitle").textContent="My foods"+(fo||!S.foods.length?"":" ("+S.foods.length+")");
+  $("entBody").style.display=eo?"block":"none";
+  $("entToggle").textContent=eo?"Hide":"Show";
+  $("entToggle").setAttribute("aria-expanded",eo);
+  $("entTitle").textContent="Entries"+(eo?"":" ("+entries(cur).length+")");
+}
+function initWk(){
+  document.querySelectorAll("#pageWorkouts>.card").forEach((card,i)=>{
+    const st=card.querySelector("strong");
+    const hd=document.createElement("div");hd.className="day";
+    const btn=document.createElement("button");
+    st.replaceWith(hd);hd.append(st,btn);
+    const body=document.createElement("div");
+    while(hd.nextSibling)body.appendChild(hd.nextSibling);
+    card.appendChild(body);
+    card._b=btn;card._body=body;card._st=st;
+    btn.onclick=()=>{S.wkOpen=S.wkOpen||{};S.wkOpen[i]=(S.wkOpen[i]===false);save();render()};
+  });
+}
+function renderWk(){
+  const cfg=[["Add exercise"],["My exercises",()=>S.exercises.length],[null],["My workouts",()=>S.plans.length],["Progress pics",()=>pics.length]];
+  document.querySelectorAll("#pageWorkouts>.card").forEach((card,i)=>{
+    if(!card._body)return;
+    const open=!(S.wkOpen&&S.wkOpen[i]===false);
+    card._body.style.display=open?"block":"none";
+    card._b.textContent=open?"Hide":"Show";
+    card._b.setAttribute("aria-expanded",open);
+    const c=cfg[i];
+    if(c&&c[0])card._st.textContent=c[0]+(open||!c[1]?"":" ("+c[1]()+")");
+  });
+}
 function exDetail(e){
   const p=[];if(e.sets)p.push(e.sets+" sets");if(e.reps)p.push(e.reps+" reps");
   let t=p.join(" \u00d7 ");if(e.weight)t+=(t?" \u00b7 ":"")+e.weight;return t;
@@ -696,13 +757,13 @@ function renderFoods(){
   });
 }
 function render(){
-  showTab();renderHabits();renderWorkouts();renderPlans();renderFoods();renderBreak();renderWater();renderMood();renderInsight();
+  showTab();renderHabits();renderWorkouts();renderPlans();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderWk();
   const today=key(new Date())===key(cur);
   $("dayLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("next").disabled=today;
   const t=Math.round(sum(cur)*10)/10;
   $("total").textContent=t;$("goalTxt").textContent=S.goal;
-  $("fill").style.width=Math.min(100,t/S.goal*100)+"%";
+  const pr=t/S.goal;$("prArc").setAttribute("stroke-dasharray",(Math.min(1,pr)*402.12)+" 402.12");$("prArc").style.opacity=pr>0?1:0;$("prPct").textContent=Math.round(pr*100)+"%";
   $("remain").textContent=t>=S.goal?"Goal reached \u2014 "+Math.round((t-S.goal)*10)/10+" g over":Math.round((S.goal-t)*10)/10+" g to go";
   const L=$("list");L.innerHTML="";
   const es=entries(cur);
@@ -710,7 +771,7 @@ function render(){
   es.forEach((e,i)=>{
     const d=document.createElement("div");d.className="item";
     const a=document.createElement("span");a.textContent=e.name;
-    if(e.cat){const c=document.createElement("span");c.className="muted";c.textContent=" \u00b7 "+e.cat;a.appendChild(c)}
+    if(e.cat||e.t){const c=document.createElement("span");c.className="muted";c.textContent=" \u00b7 "+[e.cat,e.t?fmtT(e.t):""].filter(Boolean).join(" \u00b7 ");a.appendChild(c)}
     const b=document.createElement("span");b.textContent=e.g+" g ";
     const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete");
     x.onclick=()=>{es.splice(i,1);save();render()};
@@ -750,7 +811,7 @@ $("mdprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
 $("mdnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
 ["am","pm"].forEach(per=>{$("note"+per.toUpperCase()).addEventListener("input",e=>{const k=key(cur);const d=S.mood[k]=S.mood[k]||{};const p=d[per]=d[per]||{};p.note=e.target.value;save()})});
 $("ppdate").value=key(new Date());
-openDB().then(async d=>{picDB=d;pics=await dbAll();renderPics()});
+openDB().then(async d=>{picDB=d;pics=await dbAll();renderPics();renderWk()});
 $("ppadd").onclick=async()=>{
   const f=$("ppfile").files[0],M=$("ppMsg");
   if(!f){M.textContent="Choose a photo first.";return}
@@ -770,20 +831,18 @@ $("ppShow").onclick=showCmp;
 $("cmpClose").onclick=()=>{$("cmpView").style.display="none"};
 $("cmpView").addEventListener("click",e=>{if(e.target.id==="cmpView")$("cmpView").style.display="none"});
 $("ppView").addEventListener("click",e=>{if(e.target.id==="ppView")$("ppView").style.display="none"});
-$("ppDel").onclick=async()=>{if(!openId)return;const id=openId;await dbDel(id);pics=pics.filter(p=>p.id!==id);openId=null;$("ppView").style.display="none";renderPics()};
-DAYS.forEach((n,i)=>{const o=document.createElement("option");o.value=i;o.textContent=n;$("bday").appendChild(o)});
-$("bday").value=dayIdx(new Date());
+$("ppDel").onclick=async()=>{if(!openId)return;if(!ppArm){ppArm=true;$("ppDel").textContent="Tap again to confirm";return}ppArm=false;$("ppDel").textContent="Delete";const id=openId;await dbDel(id);pics=pics.filter(p=>p.id!==id);openId=null;$("ppView").style.display="none";renderPics()};
 $("bsave").onclick=()=>{
   const n=$("bname").value.trim();
   if(!n||!bSel.size){$("bMsg").textContent=!n?"Enter a workout name.":"Pick at least one exercise.";return}
-  const day=parseInt($("bday").value,10);
   const ex=S.exercises.filter(e=>bSel.has(e.id)).map(e=>e.id);
-  if(bEdit){const p=S.plans.find(x=>x.id===bEdit);if(p){p.name=n;p.day=day;p.ex=ex}}
-  else S.plans.push({id:"p"+Date.now(),name:n,day:day,ex:ex});
+  if(bEdit){const p=S.plans.find(x=>x.id===bEdit);if(p){p.name=n;p.ex=ex}}
+  else S.plans.push({id:"p"+Date.now(),name:n,ex:ex});
   resetBuilder();save();render();
 };
 $("bcancel").onclick=()=>{resetBuilder();render()};
 $("tabWt").onclick=()=>{tab="water";render()};
+$("wtToggle").onclick=()=>{S.wtOpen=(S.wtOpen===false);save();render()};
 $("wtprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
 $("wtnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
 $("wtadd").onclick=()=>{const v=parseFloat($("wtamt").value);if(v>0){addWater(fromU(v));$("wtamt").value=""}};
@@ -791,6 +850,10 @@ $("wtamt").addEventListener("keydown",e=>{if(e.key==="Enter")$("wtadd").click()}
 $("wtsave").onclick=()=>{const v=parseFloat($("wtgoal").value);if(v>0){S.water.goal=Math.round(fromU(v));save();render()}};
 $("wtunit").onchange=()=>{S.water.unit=$("wtunit").value;save();render()};
 $("addEx").onclick=()=>{const n=$("exname").value.trim();if(!n)return;const a=parseInt($("exsets").value,10),b=parseInt($("exreps").value,10);S.exercises.push({id:"e"+Date.now(),name:n,sets:a>0?a:0,reps:b>0?b:0,weight:$("exweight").value.trim(),note:$("exnote").value.trim(),cat:$("excat").value});["exname","exsets","exreps","exweight","exnote"].forEach(id=>{$(id).value=""});save();render()};
+initWk();
+$("foodsToggle").onclick=()=>{S.foodsOpen=(S.foodsOpen===false);save();render()};
+$("entToggle").onclick=()=>{S.entOpen=(S.entOpen===false);save();render()};
+$("hToggle").onclick=()=>{S.habitsOpen=(S.habitsOpen===false);save();render()};
 $("hprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
 $("hnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
 $("prev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
