@@ -161,6 +161,22 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <strong>My workouts</strong>
       <div id="planList"></div>
     </div>
+    <div class="card">
+      <strong>Progress pics</strong>
+      <div class="muted">Photos are kept on this device only.</div>
+      <div class="row">
+        <input id="ppdate" type="date" style="flex:1">
+        <input id="ppnote" placeholder="Note (optional)" style="flex:2">
+      </div>
+      <div class="row">
+        <input id="ppfile" type="file" accept="image/*" style="flex:1">
+        <button class="primary" id="ppadd">Save photo</button>
+      </div>
+      <div class="muted" id="ppMsg" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:12px"><button id="ppCmp">Compare two photos</button><button class="primary" id="ppShow" style="display:none" disabled>View comparison</button></div>
+      <div class="muted" id="ppHint" style="margin-top:8px"></div>
+      <div id="ppGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px"></div>
+    </div>
   </div>
 
   <div id="pageWater" style="display:none">
@@ -170,8 +186,8 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
         <strong id="wtLabel"></strong>
         <button id="wtnext" aria-label="Next day">&rarr;</button>
       </div>
+      <div style="display:flex;justify-content:center;margin-top:12px"><svg width="170" height="170" viewBox="0 0 160 160" role="img" aria-label="Water goal progress"><circle cx="80" cy="80" r="64" fill="none" stroke="var(--track)" stroke-width="16"/><circle id="wtArc" cx="80" cy="80" r="64" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="0 402.12" transform="rotate(-90 80 80)" style="transition:stroke-dasharray .3s"/><text id="wtPct" x="80" y="90" text-anchor="middle" font-size="30" font-weight="700" fill="var(--text)">0%</text></svg></div>
       <div style="text-align:center;margin-top:12px"><span class="big" id="wtTotal">0</span><span class="muted"> / <span id="wtGoal"></span></span></div>
-      <div class="bar"><div id="wtFill" style="width:0"></div></div>
       <div class="muted" id="wtRemain"></div>
     </div>
     <div class="card">
@@ -200,6 +216,16 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     </div>
   </div>
 </main>
+<div id="ppView" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:50;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))">
+  <img id="ppImg" alt="Progress photo" style="max-width:100%;max-height:70vh;border-radius:12px">
+  <div id="ppCap" style="color:#fff;text-align:center"></div>
+  <div class="row"><button id="ppClose">Close</button><button id="ppDel" style="color:var(--danger)">Delete</button></div>
+</div>
+<div id="cmpView" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:60;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))">
+  <div id="cmpGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:720px"></div>
+  <div id="cmpInfo" style="color:#fff;text-align:center"></div>
+  <button id="cmpClose">Close</button>
+</div>
 
 <script>
 let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}}};
@@ -315,7 +341,7 @@ function renderWater(){
   const t=wTotal(cur);
   $("wtTotal").textContent=fmtU(t);
   $("wtGoal").textContent=fmtU(W.goal)+" "+uLabel();
-  $("wtFill").style.width=Math.min(100,t/W.goal*100)+"%";
+  const p=t/W.goal;$("wtArc").setAttribute("stroke-dasharray",(Math.min(1,p)*402.12)+" 402.12");$("wtArc").style.opacity=p>0?1:0;$("wtPct").textContent=Math.round(p*100)+"%";
   $("wtRemain").textContent=t>=W.goal?"Goal reached":fmtU(W.goal-t)+" "+uLabel()+" to go";
   const Q=$("wtQuick");Q.innerHTML="";
   (W.unit==="oz"?[8,12,16,20]:[250,330,500,750]).forEach(v=>{
@@ -386,6 +412,64 @@ function renderPlans(){
       b.append(ed,x);d.append(a,b);L.appendChild(d);
     });
   });
+}
+let pics=[],picDB=null,openId=null;
+function openDB(){return new Promise(res=>{try{const r=indexedDB.open("tracker",1);r.onupgradeneeded=()=>r.result.createObjectStore("pics",{keyPath:"id"});r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}})}
+function dbAll(){return new Promise(res=>{if(!picDB)return res([]);try{const q=picDB.transaction("pics").objectStore("pics").getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>res([])}catch(e){res([])}})}
+function dbPut(p){return new Promise(res=>{if(!picDB)return res(false);try{const t=picDB.transaction("pics","readwrite");t.objectStore("pics").put(p);t.oncomplete=()=>res(true);t.onerror=()=>res(false)}catch(e){res(false)}})}
+function dbDel(id){return new Promise(res=>{if(!picDB)return res(false);try{const t=picDB.transaction("pics","readwrite");t.objectStore("pics").delete(id);t.oncomplete=()=>res(true);t.onerror=()=>res(false)}catch(e){res(false)}})}
+function shrink(file){return new Promise((res,rej)=>{
+  const fr=new FileReader();
+  fr.onerror=()=>rej();
+  fr.onload=()=>{const im=new Image();
+    im.onerror=()=>rej();
+    im.onload=()=>{const s=Math.min(1,1000/Math.max(im.width,im.height));const c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext("2d").drawImage(im,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",0.8))};
+    im.src=fr.result};
+  fr.readAsDataURL(file);
+})}
+function fmtDate(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})}
+function openPic(p){openId=p.id;$("ppImg").src=p.img;$("ppCap").textContent=fmtDate(p.date)+(p.note?" \u00b7 "+p.note:"");$("ppView").style.display="flex"}
+function renderPics(){
+  updCmp();const G=$("ppGrid");G.innerHTML="";
+  if(!pics.length){G.style.display="block";G.innerHTML='<div class="muted">No photos yet.</div>';return}
+  G.style.display="grid";
+  [...pics].sort((a,b)=>b.date>a.date?1:b.date<a.date?-1:b.ts-a.ts).forEach(p=>{
+    const w=document.createElement("button");w.style.cssText="padding:0;border:0;background:none;text-align:left;cursor:pointer;color:inherit";
+    const im=document.createElement("img");im.src=p.img;im.alt="Progress photo "+p.date;im.style.cssText="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;display:block";
+    const c=document.createElement("div");c.className="muted";c.style.fontSize="12px";const si=cmpSel.indexOf(p.id);c.textContent=fmtDate(p.date)+(cmp&&si>=0?" \u00b7 selected":"");
+    if(cmp&&si>=0){im.style.outline="3px solid var(--accent)";im.style.outlineOffset="-3px"}
+    w.append(im,c);
+    w.onclick=()=>{
+      if(!cmp){openPic(p);return}
+      const i=cmpSel.indexOf(p.id);
+      if(i>=0)cmpSel.splice(i,1);else{if(cmpSel.length>=2)cmpSel.shift();cmpSel.push(p.id)}
+      renderPics();
+    };
+    G.appendChild(w);
+  });
+}
+let cmp=false,cmpSel=[];
+function updCmp(){
+  $("ppCmp").textContent=cmp?"Cancel compare":"Compare two photos";
+  $("ppShow").style.display=cmp?"inline-block":"none";
+  $("ppShow").disabled=cmpSel.length!==2;
+  $("ppHint").textContent=cmp?cmpSel.length+" of 2 selected \u2014 tap photos to choose":"";
+}
+function showCmp(){
+  const sel=cmpSel.map(id=>pics.find(p=>p.id===id)).filter(Boolean);
+  if(sel.length!==2)return;
+  sel.sort((a,b)=>a.date>b.date?1:a.date<b.date?-1:a.ts-b.ts);
+  const G=$("cmpGrid");G.innerHTML="";
+  ["Before","After"].forEach((lbl,i)=>{
+    const p=sel[i],w=document.createElement("div");
+    const l=document.createElement("div");l.style.cssText="color:#fff;font-weight:600;margin-bottom:6px;text-align:center";l.textContent=lbl;
+    const im=document.createElement("img");im.src=p.img;im.alt=lbl+" photo";im.style.cssText="width:100%;max-height:60vh;object-fit:contain;border-radius:10px;background:#000;display:block";
+    const c=document.createElement("div");c.style.cssText="color:#fff;font-size:13px;text-align:center;margin-top:6px";c.textContent=fmtDate(p.date)+(p.note?" \u00b7 "+p.note:"");
+    w.append(l,im,c);G.appendChild(w);
+  });
+  const dd=Math.round((new Date(sel[1].date+"T00:00:00")-new Date(sel[0].date+"T00:00:00"))/86400000);
+  $("cmpInfo").textContent=dd===0?"Same day":dd+" day"+(dd===1?"":"s")+" apart";
+  $("cmpView").style.display="flex";
 }
 function exDetail(e){
   const p=[];if(e.sets)p.push(e.sets+" sets");if(e.reps)p.push(e.reps+" reps");
@@ -494,6 +578,28 @@ $("hname").addEventListener("keydown",e=>{if(e.key==="Enter")$("addHabit").click
 $("tabP").onclick=()=>{tab="protein";render()};
 $("tabH").onclick=()=>{tab="habits";render()};
 $("tabW").onclick=()=>{tab="workouts";render()};
+$("ppdate").value=key(new Date());
+openDB().then(async d=>{picDB=d;pics=await dbAll();renderPics()});
+$("ppadd").onclick=async()=>{
+  const f=$("ppfile").files[0],M=$("ppMsg");
+  if(!f){M.textContent="Choose a photo first.";return}
+  M.textContent="Saving...";
+  try{
+    const img=await shrink(f);
+    const p={id:"pp"+Date.now(),date:$("ppdate").value||key(new Date()),note:$("ppnote").value.trim(),img:img,ts:Date.now()};
+    const ok=await dbPut(p);
+    pics.push(p);renderPics();
+    $("ppfile").value="";$("ppnote").value="";
+    M.textContent=ok?"":"Saved for this session only; this browser blocked storage.";
+  }catch(e){M.textContent="Couldn't read that photo."}
+};
+$("ppClose").onclick=()=>{$("ppView").style.display="none"};
+$("ppCmp").onclick=()=>{cmp=!cmp;if(!cmp)cmpSel=[];renderPics()};
+$("ppShow").onclick=showCmp;
+$("cmpClose").onclick=()=>{$("cmpView").style.display="none"};
+$("cmpView").addEventListener("click",e=>{if(e.target.id==="cmpView")$("cmpView").style.display="none"});
+$("ppView").addEventListener("click",e=>{if(e.target.id==="ppView")$("ppView").style.display="none"});
+$("ppDel").onclick=async()=>{if(!openId)return;const id=openId;await dbDel(id);pics=pics.filter(p=>p.id!==id);openId=null;$("ppView").style.display="none";renderPics()};
 DAYS.forEach((n,i)=>{const o=document.createElement("option");o.value=i;o.textContent=n;$("bday").appendChild(o)});
 $("bday").value=dayIdx(new Date());
 $("bsave").onclick=()=>{
