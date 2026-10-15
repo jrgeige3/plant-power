@@ -32,14 +32,14 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .hist span{display:block;background:var(--track);border-radius:4px 4px 0 0;margin-bottom:4px}
 .hist .on span{background:var(--accent)}
 .day{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1;padding:10px 4px}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
 .cell{width:18px;height:18px;border-radius:50%;background:var(--track);justify-self:center}.cell.on{background:var(--accent)}
 </style>
 </head>
 <body>
 <main>
   <h1>Daily Tracker</h1>
-  <div class="tabs"><button id="tabP" class="on">Protein</button><button id="tabH">Habits</button><button id="tabW">Workouts</button></div>
+  <div class="tabs"><button id="tabH">Habits</button><button id="tabWt">Water</button><button id="tabP" class="on">Protein</button><button id="tabW">Workouts</button></div>
   <div id="pageProtein">
 
   <div class="card">
@@ -56,6 +56,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   <div class="card">
     <strong>Add food</strong>
     <div class="row">
+      <select id="cat" style="flex:1 1 100%" aria-label="Meal"></select>
       <input id="name" placeholder="Food (optional)" style="flex:2">
       <input id="grams" type="number" inputmode="decimal" min="0" placeholder="g protein" style="flex:1">
       <button class="primary" id="add">Add</button>
@@ -76,6 +77,11 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   <div class="card">
     <strong>Entries</strong>
     <div id="list"></div>
+  </div>
+
+  <div class="card">
+    <strong>Protein by meal</strong>
+    <div id="mealBreak"></div>
   </div>
 
   <div class="card">
@@ -137,11 +143,66 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <strong>My exercises</strong>
       <div id="exList"></div>
     </div>
+    <div class="card">
+      <strong id="bTitle">Build a workout</strong>
+      <div class="row">
+        <input id="bname" placeholder="Workout name (e.g. Push day)" style="flex:2">
+        <select id="bday" style="flex:1" aria-label="Day of week"></select>
+      </div>
+      <div class="muted" style="margin-top:12px">Pick exercises from My exercises</div>
+      <div id="bPick"></div>
+      <div class="muted" id="bMsg" style="margin-top:8px;color:var(--danger)"></div>
+      <div class="row">
+        <button class="primary" id="bsave">Save workout</button>
+        <button id="bcancel" style="display:none">Cancel edit</button>
+      </div>
+    </div>
+    <div class="card">
+      <strong>My workouts</strong>
+      <div id="planList"></div>
+    </div>
+  </div>
+
+  <div id="pageWater" style="display:none">
+    <div class="card">
+      <div class="day">
+        <button id="wtprev" aria-label="Previous day">&larr;</button>
+        <strong id="wtLabel"></strong>
+        <button id="wtnext" aria-label="Next day">&rarr;</button>
+      </div>
+      <div style="text-align:center;margin-top:12px"><span class="big" id="wtTotal">0</span><span class="muted"> / <span id="wtGoal"></span></span></div>
+      <div class="bar"><div id="wtFill" style="width:0"></div></div>
+      <div class="muted" id="wtRemain"></div>
+    </div>
+    <div class="card">
+      <strong>Add water</strong>
+      <div class="row" id="wtQuick"></div>
+      <div class="row">
+        <input id="wtamt" type="number" inputmode="decimal" min="0" placeholder="Custom amount" style="flex:1">
+        <button class="primary" id="wtadd">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <strong>Entries</strong>
+      <div id="wtList"></div>
+    </div>
+    <div class="card">
+      <strong>Last 7 days</strong>
+      <div class="hist" id="wtHist"></div>
+    </div>
+    <div class="card">
+      <strong>Daily goal and units</strong>
+      <div class="row">
+        <input id="wtgoal" type="number" inputmode="decimal" min="1" style="width:110px">
+        <select id="wtunit"><option value="oz">fl oz</option><option value="ml">ml</option></select>
+        <button id="wtsave">Save goal</button>
+      </div>
+    </div>
   </div>
 </main>
 
 <script>
-let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[]};
+let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}}};
 try{const r=localStorage.getItem("protein-tracker");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 const save=()=>{try{localStorage.setItem("protein-tracker",JSON.stringify(S))}catch(e){}};
 const key=d=>{const o=new Date(d.getTime()-d.getTimezoneOffset()*60000);return o.toISOString().slice(0,10)};
@@ -149,16 +210,17 @@ let cur=new Date();let tab="protein";
 const $=id=>document.getElementById(id);
 const entries=(d)=>S.days[key(d)]||[];
 const sum=d=>entries(d).reduce((a,e)=>a+e.g,0);
-function addEntry(name,g){
+function addEntry(name,g,cat){
   g=parseFloat(g);if(!(g>0))return;
-  const k=key(cur);(S.days[k]=S.days[k]||[]).push({name:name||"Protein",g});
+  const k=key(cur);(S.days[k]=S.days[k]||[]).push({name:name||"Protein",g,cat:cat||$("cat").value});
   save();render();
 }
 function showTab(){
   $("pageProtein").style.display=tab==="protein"?"block":"none";
   $("pageHabits").style.display=tab==="habits"?"block":"none";
   $("pageWorkouts").style.display=tab==="workouts"?"block":"none";
-  $("tabP").classList.toggle("on",tab==="protein");$("tabH").classList.toggle("on",tab==="habits");$("tabW").classList.toggle("on",tab==="workouts");
+  $("pageWater").style.display=tab==="water"?"block":"none";
+  $("tabP").classList.toggle("on",tab==="protein");$("tabH").classList.toggle("on",tab==="habits");$("tabW").classList.toggle("on",tab==="workouts");$("tabWt").classList.toggle("on",tab==="water");
 }
 const FREQ=[["Daily",0],["Once a week",1],["Twice a week",2],["3 times a week",3],["4 times a week",4],["5 times a week",5],["6 times a week",6]];
 function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
@@ -216,6 +278,113 @@ function renderHabits(){
     const n=document.createElement("span");n.style.cssText="overflow:hidden;text-overflow:ellipsis;white-space:nowrap";n.textContent=h.name;r.appendChild(n);
     days.forEach(d=>{const c=document.createElement("div");c.className="cell"+((S.hlog[h.id]||{})[key(d)]?" on":"");r.appendChild(c)});
     G.appendChild(r);
+  });
+}
+const CATS=["Breakfast","Lunch","Dinner","Snack"];
+function renderBreak(){
+  const B=$("mealBreak");B.innerHTML="";
+  const es=entries(cur),tot=es.reduce((a,e)=>a+e.g,0);
+  if(!tot){B.innerHTML='<div class="muted" style="margin-top:8px">Log food to see the split.</div>';return}
+  [...CATS,"Uncategorized"].forEach(c=>{
+    const g=es.filter(e=>(e.cat||"Uncategorized")===c).reduce((a,e)=>a+e.g,0);
+    if(!g&&c==="Uncategorized")return;
+    const pct=g/tot*100;
+    const r=document.createElement("div");r.style.marginTop="12px";
+    const t=document.createElement("div");t.style.cssText="display:flex;justify-content:space-between";
+    const l=document.createElement("span");l.textContent=c;
+    const v=document.createElement("span");v.className="muted";v.textContent=Math.round(g*10)/10+" g \u00b7 "+Math.round(pct)+"%";
+    t.append(l,v);
+    const b=document.createElement("div");b.className="bar";b.style.margin="6px 0 0";
+    const f=document.createElement("div");f.style.width=pct+"%";b.appendChild(f);
+    r.append(t,b);B.appendChild(r);
+  });
+}
+const toU=ml=>S.water.unit==="oz"?ml/29.5735:ml;
+const fromU=v=>S.water.unit==="oz"?v*29.5735:v;
+const fmtU=ml=>Math.round(toU(ml)*10)/10;
+const uLabel=()=>S.water.unit==="oz"?"fl oz":"ml";
+const wTotal=d=>(S.water.days[key(d)]||[]).reduce((a,x)=>a+x,0);
+function addWater(ml){
+  ml=Math.round(ml);if(!(ml>0))return;
+  const k=key(cur);(S.water.days[k]=S.water.days[k]||[]).push(ml);save();render();
+}
+function renderWater(){
+  const W=S.water,today=key(new Date())===key(cur);
+  $("wtLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  $("wtnext").disabled=today;
+  const t=wTotal(cur);
+  $("wtTotal").textContent=fmtU(t);
+  $("wtGoal").textContent=fmtU(W.goal)+" "+uLabel();
+  $("wtFill").style.width=Math.min(100,t/W.goal*100)+"%";
+  $("wtRemain").textContent=t>=W.goal?"Goal reached":fmtU(W.goal-t)+" "+uLabel()+" to go";
+  const Q=$("wtQuick");Q.innerHTML="";
+  (W.unit==="oz"?[8,12,16,20]:[250,330,500,750]).forEach(v=>{
+    const b=document.createElement("button");b.className="chip";b.textContent="+"+v+" "+uLabel();
+    b.onclick=()=>addWater(fromU(v));Q.appendChild(b);
+  });
+  $("wtamt").placeholder="Custom ("+uLabel()+")";
+  $("wtunit").value=W.unit;
+  $("wtgoal").value=fmtU(W.goal);
+  const es=W.days[key(cur)]||[],L=$("wtList");L.innerHTML="";
+  if(!es.length)L.innerHTML='<div class="muted" style="margin-top:8px">Nothing logged yet.</div>';
+  es.forEach((ml,i)=>{
+    const d=document.createElement("div");d.className="item";
+    const a=document.createElement("span");a.textContent=fmtU(ml)+" "+uLabel();
+    const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete");
+    x.onclick=()=>{es.splice(i,1);save();render()};
+    d.append(a,x);L.appendChild(d);
+  });
+  const H=$("wtHist");H.innerHTML="";
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const v=wTotal(d),h=Math.max(2,Math.min(70,v/W.goal*70));
+    const c=document.createElement("div");if(v>=W.goal)c.className="on";
+    c.innerHTML='<span style="height:'+h+'px"></span>'+Math.round(toU(v))+'<br>'+d.toLocaleDateString(undefined,{weekday:"narrow"});
+    H.appendChild(c);
+  }
+}
+const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+let bSel=new Set(),bEdit=null;
+const dayIdx=d=>(d.getDay()+6)%7;
+function resetBuilder(){bEdit=null;bSel=new Set();$("bname").value="";$("bMsg").textContent=""}
+function renderPlans(){
+  const P=$("bPick");P.innerHTML="";
+  if(!S.exercises.length)P.innerHTML='<div class="muted" style="margin-top:8px">Add exercises in My exercises first.</div>';
+  S.exercises.forEach(e=>{
+    const lb=document.createElement("label");lb.style.cssText="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border);cursor:pointer";
+    const c=document.createElement("input");c.type="checkbox";c.style.cssText="width:20px;height:20px;padding:0;margin-top:2px;accent-color:var(--accent)";
+    c.checked=bSel.has(e.id);c.onchange=()=>{if(c.checked)bSel.add(e.id);else bSel.delete(e.id)};
+    const t=document.createElement("div");
+    const n=document.createElement("div");n.textContent=e.name;
+    const dt=document.createElement("div");dt.className="muted";dt.style.fontSize="13px";dt.textContent=[e.cat,exDetail(e)].filter(Boolean).join(" \u00b7 ");
+    t.append(n,dt);lb.append(c,t);P.appendChild(lb);
+  });
+  $("bTitle").textContent=bEdit?"Edit workout":"Build a workout";
+  $("bsave").textContent=bEdit?"Update workout":"Save workout";
+  $("bcancel").style.display=bEdit?"inline-block":"none";
+  const L=$("planList");L.innerHTML="";
+  if(!S.plans.length){L.innerHTML='<div class="muted" style="margin-top:8px">No workouts saved yet.</div>';return}
+  const td=dayIdx(new Date());
+  DAYS.forEach((dn,di)=>{
+    const grp=S.plans.filter(p=>p.day===di);
+    if(!grp.length)return;
+    const hd=document.createElement("div");hd.textContent=dn+(di===td?" \u00b7 Today":"");hd.className="muted";
+    hd.style.cssText="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em;margin-top:14px"+(di===td?";color:var(--accent)":"");
+    L.appendChild(hd);
+    grp.forEach(p=>{
+      const d=document.createElement("div");d.className="item";d.style.alignItems="flex-start";
+      const a=document.createElement("div");a.style.flex="1";a.style.minWidth="0";
+      const t=document.createElement("div");t.style.fontWeight="600";t.textContent=p.name;a.appendChild(t);
+      const items=p.ex.map(id=>S.exercises.find(e=>e.id===id)).filter(Boolean);
+      if(!items.length){const m=document.createElement("div");m.className="muted";m.textContent="No exercises";a.appendChild(m)}
+      items.forEach(e=>{const r=document.createElement("div");r.style.cssText="font-size:14px;margin-top:4px";const dt=exDetail(e);r.textContent=e.name+(dt?" \u00b7 "+dt:"");a.appendChild(r)});
+      const b=document.createElement("div");b.style.whiteSpace="nowrap";
+      const ed=document.createElement("button");ed.textContent="Edit";
+      ed.onclick=()=>{bEdit=p.id;bSel=new Set(p.ex);$("bname").value=p.name;$("bday").value=p.day;$("bMsg").textContent="";render();$("bname").scrollIntoView({behavior:"smooth",block:"center"})};
+      const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete workout");
+      x.onclick=()=>{S.plans.splice(S.plans.indexOf(p),1);if(bEdit===p.id)resetBuilder();save();render()};
+      b.append(ed,x);d.append(a,b);L.appendChild(d);
+    });
   });
 }
 function exDetail(e){
@@ -278,7 +447,7 @@ function renderFoods(){
   });
 }
 function render(){
-  showTab();renderHabits();renderWorkouts();renderFoods();
+  showTab();renderHabits();renderWorkouts();renderPlans();renderFoods();renderBreak();renderWater();
   const today=key(new Date())===key(cur);
   $("dayLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("next").disabled=today;
@@ -292,6 +461,7 @@ function render(){
   es.forEach((e,i)=>{
     const d=document.createElement("div");d.className="item";
     const a=document.createElement("span");a.textContent=e.name;
+    if(e.cat){const c=document.createElement("span");c.className="muted";c.textContent=" \u00b7 "+e.cat;a.appendChild(c)}
     const b=document.createElement("span");b.textContent=e.g+" g ";
     const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete");
     x.onclick=()=>{es.splice(i,1);save();render()};
@@ -317,11 +487,32 @@ $("saveFood").onclick=()=>{
   save();render();
 };
 FREQ.forEach(([t,v])=>{const o=document.createElement("option");o.value=v;o.textContent=t;$("hfreq").appendChild(o)});
+CATS.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;$("cat").appendChild(o)});
+{const h=new Date().getHours();$("cat").value=h<11?"Breakfast":h<15?"Lunch":h<17?"Snack":h<21?"Dinner":"Snack"}
 $("addHabit").onclick=()=>{const n=$("hname").value.trim();if(!n)return;S.habits.push({id:"h"+Date.now(),name:n,perWeek:parseInt($("hfreq").value,10)||0});$("hname").value="";save();render()};
 $("hname").addEventListener("keydown",e=>{if(e.key==="Enter")$("addHabit").click()});
 $("tabP").onclick=()=>{tab="protein";render()};
 $("tabH").onclick=()=>{tab="habits";render()};
 $("tabW").onclick=()=>{tab="workouts";render()};
+DAYS.forEach((n,i)=>{const o=document.createElement("option");o.value=i;o.textContent=n;$("bday").appendChild(o)});
+$("bday").value=dayIdx(new Date());
+$("bsave").onclick=()=>{
+  const n=$("bname").value.trim();
+  if(!n||!bSel.size){$("bMsg").textContent=!n?"Enter a workout name.":"Pick at least one exercise.";return}
+  const day=parseInt($("bday").value,10);
+  const ex=S.exercises.filter(e=>bSel.has(e.id)).map(e=>e.id);
+  if(bEdit){const p=S.plans.find(x=>x.id===bEdit);if(p){p.name=n;p.day=day;p.ex=ex}}
+  else S.plans.push({id:"p"+Date.now(),name:n,day:day,ex:ex});
+  resetBuilder();save();render();
+};
+$("bcancel").onclick=()=>{resetBuilder();render()};
+$("tabWt").onclick=()=>{tab="water";render()};
+$("wtprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
+$("wtnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
+$("wtadd").onclick=()=>{const v=parseFloat($("wtamt").value);if(v>0){addWater(fromU(v));$("wtamt").value=""}};
+$("wtamt").addEventListener("keydown",e=>{if(e.key==="Enter")$("wtadd").click()});
+$("wtsave").onclick=()=>{const v=parseFloat($("wtgoal").value);if(v>0){S.water.goal=Math.round(fromU(v));save();render()}};
+$("wtunit").onchange=()=>{S.water.unit=$("wtunit").value;save();render()};
 $("addEx").onclick=()=>{const n=$("exname").value.trim();if(!n)return;const a=parseInt($("exsets").value,10),b=parseInt($("exreps").value,10);S.exercises.push({id:"e"+Date.now(),name:n,sets:a>0?a:0,reps:b>0?b:0,weight:$("exweight").value.trim(),note:$("exnote").value.trim(),cat:$("excat").value});["exname","exsets","exreps","exweight","exnote"].forEach(id=>{$(id).value=""});save();render()};
 $("hprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
 $("hnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
