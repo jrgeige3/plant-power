@@ -155,8 +155,12 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
         <div class="muted" id="bHint">Tick exercises above to log or schedule a workout.</div>
         <div class="row"><input id="bname" placeholder="Workout name (optional, e.g. Push day)" style="flex:1"></div>
         <div class="muted" id="bMsg" style="margin-top:8px;color:var(--danger)"></div>
-        <div class="row"><button class="primary" id="bLog">Log workout</button><button id="bSched">Schedule</button><button id="bClear">Clear</button></div>
+        <div class="row"><button id="bLog" style="padding:4px 10px;font-size:13px">Log workout</button><button id="bSave" style="padding:4px 10px;font-size:13px">Save workout</button><button id="bSched" style="padding:4px 10px;font-size:13px">Schedule</button><button id="bClear" style="padding:4px 10px;font-size:13px">Clear</button></div>
         <div class="row" id="bSchedRow" style="display:none"><input id="bdate" type="date" style="flex:1" aria-label="Workout date"><button class="primary" id="bSchedOk">Add to schedule</button><button id="bSchedCancel">Cancel</button></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="muted" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Saved workouts</div>
+        <div id="planList"></div>
       </div>
     </div>
     <div class="card" id="cardSched">
@@ -505,7 +509,7 @@ function renderSched(){
     ex.textContent=s.ex.map(id=>(S.exercises.find(e=>e.id===id)||{}).name).filter(Boolean).join(", ");
     a.append(t,st,ex);
     const b=document.createElement("div");b.style.cssText="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;width:100%";
-    const ok=document.createElement("button");if(due)ok.className="primary";ok.textContent=due?"Confirm & log":"Confirm on "+fmtDate(s.date);ok.disabled=!due;
+    const ok=document.createElement("button");ok.textContent=due?"Confirm & log":"Confirm on "+fmtDate(s.date);ok.disabled=!due;
     ok.style.cssText="padding:4px 10px;font-size:13px";ok.onclick=()=>openLog(s.name,s.ex,s.date,s.id,false);
     const rm=document.createElement("button");rm.textContent=due?"Skip":"Remove";rm.style.cssText="padding:4px 10px;font-size:13px";
     rm.onclick=()=>{S.sched=S.sched.filter(x=>x.id!==s.id);save();render()};
@@ -861,6 +865,41 @@ function renderProg(){
     r.append(a,b);sw.appendChild(r);
   });
 }
+let planSched=null;
+function renderPlans(){
+  const L=$("planList");L.innerHTML="";
+  if(!S.plans||!S.plans.length){L.innerHTML='<div class="muted" style="margin-top:8px">No saved workouts yet. Tick exercises, name the workout, and tap Save workout.</div>';return}
+  const sm="padding:4px 10px;font-size:13px";
+  S.plans.forEach(p=>{
+    const items=(p.ex||[]).map(id=>S.exercises.find(e=>e.id===id)).filter(Boolean);
+    const d=document.createElement("div");d.className="item";d.style.display="block";
+    const hr=document.createElement("div");hr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px";
+    const t=document.createElement("div");t.style.cssText="font-weight:600;flex:1;min-width:0";t.textContent=p.name;
+    const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete saved workout");
+    x.onclick=()=>{S.plans=S.plans.filter(q=>q.id!==p.id);if(planSched===p.id)planSched=null;save();render()};
+    hr.append(t,x);d.appendChild(hr);
+    if(!items.length){const m=document.createElement("div");m.className="muted";m.style.fontSize="13px";m.textContent="No exercises left in this workout.";d.appendChild(m)}
+    items.forEach(e=>{
+      const r=document.createElement("div");r.style.cssText="font-size:14px;margin-top:4px";const dt=exDetail(e);r.textContent=e.name+(dt?" \u00b7 "+dt:"");d.appendChild(r);
+      if(e.note){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=e.note;d.appendChild(q)}
+    });
+    const b=document.createElement("div");b.style.cssText="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px";
+    const lg=document.createElement("button");lg.style.cssText=sm;lg.textContent="Log workout";lg.disabled=!items.length;
+    lg.onclick=()=>openLog(p.name,p.ex||[],key(new Date()),null,false);
+    const sc=document.createElement("button");sc.style.cssText=sm;sc.textContent="Schedule";sc.disabled=!items.length;
+    sc.onclick=()=>{planSched=planSched===p.id?null:p.id;render()};
+    b.append(lg,sc);d.appendChild(b);
+    if(planSched===p.id){
+      const sf=document.createElement("div");sf.className="row";
+      const di=document.createElement("input");di.type="date";di.value=key(new Date());di.min=key(new Date());di.style.flex="1";di.setAttribute("aria-label","Workout date");
+      const ok=document.createElement("button");ok.className="primary";ok.style.cssText=sm;ok.textContent="Add to schedule";
+      ok.onclick=()=>{if(!di.value)return;S.sched.push({id:"s"+Date.now(),name:p.name,date:di.value,ex:(p.ex||[]).slice()});planSched=null;save();render()};
+      const cn=document.createElement("button");cn.style.cssText=sm;cn.textContent="Cancel";cn.onclick=()=>{planSched=null;render()};
+      sf.append(di,ok,cn);d.appendChild(sf);
+    }
+    L.appendChild(d);
+  });
+}
 function exDetail(e){
   const p=[];if(e.sets)p.push(e.sets+" sets");if(e.reps)p.push(e.reps+" reps");
   let t=p.join(" \u00d7 ");if(e.weight)t+=(t?" \u00b7 ":"")+e.weight;return t;
@@ -930,7 +969,7 @@ function renderFoods(){
   });
 }
 function render(){
-  showTab();renderHabits();renderWorkouts();updBar();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderSched();renderHist();renderProg();renderWk();
+  showTab();renderHabits();renderWorkouts();updBar();renderPlans();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderSched();renderHist();renderProg();renderWk();
   const today=key(new Date())===key(cur);
   $("dayLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("next").disabled=today;
@@ -1006,6 +1045,14 @@ $("cmpView").addEventListener("click",e=>{if(e.target.id==="cmpView")$("cmpView"
 $("ppView").addEventListener("click",e=>{if(e.target.id==="ppView")$("ppView").style.display="none"});
 $("ppDel").onclick=async()=>{if(!openId)return;if(!ppArm){ppArm=true;$("ppDel").textContent="Tap again to confirm";return}ppArm=false;$("ppDel").textContent="Delete";const id=openId;await dbDel(id);pics=pics.filter(p=>p.id!==id);openId=null;$("ppView").style.display="none";renderPics()};
 $("progEx").onchange=()=>{progSel=$("progEx").value;renderProg()};
+$("bSave").onclick=()=>{
+  const n=$("bname").value.trim();
+  if(!bSel.size){$("bMsg").textContent="Tick at least one exercise above.";return}
+  if(!n){$("bMsg").textContent="Enter a workout name to save it.";return}
+  S.plans=S.plans||[];
+  S.plans.push({id:"p"+Date.now(),name:n,ex:S.exercises.filter(e=>bSel.has(e.id)).map(e=>e.id)});
+  resetBuilder();$("bSchedRow").style.display="none";save();render();
+};
 $("bLog").onclick=()=>{
   if(!bSel.size){$("bMsg").textContent="Tick at least one exercise above.";return}
   $("bMsg").textContent="";
