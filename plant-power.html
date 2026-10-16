@@ -134,39 +134,46 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     <div class="card">
       <strong>Add exercise</strong>
       <div class="row">
+        <select id="excat" style="flex:1 1 100%" aria-label="Category"></select>
+        <div id="newCatRow" style="display:none;flex:1 1 100%;gap:8px"><input id="newcat" maxlength="30" placeholder="New category name" style="flex:1"><button id="addCat">Add category</button></div>
+      </div>
+      <div class="row">
         <input id="exname" placeholder="Exercise (e.g. Bench press)" style="flex:1 1 100%">
         <input id="exsets" type="number" inputmode="numeric" min="0" placeholder="Sets" style="flex:1">
         <input id="exreps" type="number" inputmode="numeric" min="0" placeholder="Reps" style="flex:1">
         <input id="exweight" placeholder="Weight" style="flex:1">
       </div>
       <div class="row">
-        <select id="excat" style="flex:1 1 100%"><option value="Upper body">Upper body</option><option value="Lower body">Lower body</option></select>
         <input id="exnote" placeholder="Notes (optional)" style="flex:1">
         <button class="primary" id="addEx">Add</button>
       </div>
     </div>
     <div class="card">
-      <strong>My exercises</strong>
+      <strong>My exercises and workouts</strong>
       <div id="exList"></div>
-    </div>
-    <div class="card">
-      <strong id="bTitle">Build a workout</strong>
-      <div class="row">
-        <input id="bname" placeholder="Workout name (e.g. Push day)" style="flex:1">
-      </div>
-      <div class="muted" style="margin-top:12px">Pick exercises from My exercises</div>
-      <div id="bPick"></div>
-      <div class="muted" id="bMsg" style="margin-top:8px;color:var(--danger)"></div>
-      <div class="row">
-        <button class="primary" id="bsave">Save workout</button>
-        <button id="bcancel" style="display:none">Cancel edit</button>
+      <div id="wbBar" style="margin-top:14px;padding:10px 12px;border:1px solid var(--border);border-radius:10px">
+        <div class="muted" id="bHint">Tick exercises above to log or schedule a workout.</div>
+        <div class="row"><input id="bname" placeholder="Workout name (optional, e.g. Push day)" style="flex:1"></div>
+        <div class="muted" id="bMsg" style="margin-top:8px;color:var(--danger)"></div>
+        <div class="row"><button class="primary" id="bLog">Log workout</button><button id="bSched">Schedule</button><button id="bClear">Clear</button></div>
+        <div class="row" id="bSchedRow" style="display:none"><input id="bdate" type="date" style="flex:1" aria-label="Workout date"><button class="primary" id="bSchedOk">Add to schedule</button><button id="bSchedCancel">Cancel</button></div>
       </div>
     </div>
-    <div class="card">
-      <strong>My workouts</strong>
-      <div id="planList"></div>
+    <div class="card" id="cardSched">
+      <strong>Scheduled</strong>
+      <div class="muted">Confirm a scheduled workout on its day to log it. Workouts you don't confirm aren't kept in your log.</div>
+      <div id="schedList"></div>
     </div>
-    <div class="card">
+    <div class="card" id="cardHist">
+      <strong>Workout log</strong>
+      <div id="histList"></div>
+    </div>
+    <div class="card" id="cardProg">
+      <strong>Progress</strong>
+      <select id="progEx" style="width:100%;margin-top:8px" aria-label="Exercise"></select>
+      <div id="progBody"></div>
+    </div>
+    <div class="card" id="cardPics">
       <strong>Progress pics</strong>
       <div class="muted">Photos are kept on this device only.</div>
       <div class="row">
@@ -282,9 +289,17 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
   <div id="cmpInfo" style="color:#fff;text-align:center"></div>
   <button id="cmpClose">Close</button>
 </div>
+<div id="logView" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;align-items:flex-start;justify-content:center;overflow:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))">
+  <div class="card" style="width:100%;max-width:520px;margin:0">
+    <strong id="logTitle">Log workout</strong>
+    <div class="muted" id="logSub" style="margin-top:4px"></div>
+    <div id="logRows"></div>
+    <div class="row"><button class="primary" id="logOk">Confirm &amp; log</button><button id="logCancel">Cancel</button></div>
+  </div>
+</div>
 
 <script>
-let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}},mood:{}};
+let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}},mood:{},wlog:[],sched:[]};
 try{const r=localStorage.getItem("protein-tracker");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 try{Object.keys(S.water.days).forEach(k=>{S.water.days[k]=S.water.days[k].map(x=>typeof x==="number"?{ml:x}:x)})}catch(e){}
 const save=()=>{try{localStorage.setItem("protein-tracker",JSON.stringify(S))}catch(e){}};
@@ -439,39 +454,97 @@ function renderWater(){
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 let bSel=new Set(),bEdit=null;
 const dayIdx=d=>(d.getDay()+6)%7;
-function resetBuilder(){bEdit=null;bSel=new Set();$("bname").value="";$("bMsg").textContent=""}
-function renderPlans(){
-  const P=$("bPick");P.innerHTML="";
-  if(!S.exercises.length)P.innerHTML='<div class="muted" style="margin-top:8px">Add exercises in My exercises first.</div>';
-  S.exercises.forEach(e=>{
-    const lb=document.createElement("label");lb.style.cssText="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border);cursor:pointer";
-    const c=document.createElement("input");c.type="checkbox";c.style.cssText="width:20px;height:20px;padding:0;margin-top:2px;accent-color:var(--accent)";
-    c.checked=bSel.has(e.id);c.onchange=()=>{if(c.checked)bSel.add(e.id);else bSel.delete(e.id)};
-    const t=document.createElement("div");
-    const n=document.createElement("div");n.textContent=e.name;
-    const dt=document.createElement("div");dt.className="muted";dt.style.fontSize="13px";dt.textContent=[e.cat,exDetail(e)].filter(Boolean).join(" \u00b7 ");
-    t.append(n,dt);lb.append(c,t);P.appendChild(lb);
+function resetBuilder(){bSel=new Set();$("bname").value="";$("bMsg").textContent=""}
+let logCtx=null;
+function updBar(){
+  bSel=new Set([...bSel].filter(id=>S.exercises.some(e=>e.id===id)));
+  const k=bSel.size;
+  $("bHint").textContent=k?k+" selected":"Tick exercises above to log or schedule a workout.";
+}
+function openLog(name,exIds,date,schedId,fromSel){
+  const items=exIds.map(id=>S.exercises.find(e=>e.id===id)).filter(Boolean);
+  logCtx={name:name,date:date,schedId:schedId,fromSel:fromSel,rows:[]};
+  $("logTitle").textContent="Log: "+name;
+  $("logSub").textContent=fmtDate(date)+" \u00b7 Review sets, reps, weight and notes, then confirm. Any changes also update My exercises and workouts.";
+  const R=$("logRows");R.innerHTML="";
+  $("logOk").disabled=!items.length;
+  if(!items.length)R.innerHTML='<div class="muted" style="margin-top:12px">None of these exercises exist anymore.</div>';
+  const f=(lbl,val,num)=>{
+    const w=document.createElement("label");w.className="muted";w.style.cssText="font-size:12px;flex:1;display:flex;flex-direction:column;gap:4px;min-width:0";
+    w.appendChild(document.createTextNode(lbl));
+    const i=document.createElement("input");i.value=val;
+    if(num){i.type="number";i.inputMode="numeric";i.min="0"}
+    i.style.cssText="width:100%;font-size:15px";w.appendChild(i);return [w,i];
+  };
+  items.forEach(e=>{
+    const w=document.createElement("div");w.style.cssText="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)";
+    const t=document.createElement("div");t.style.fontWeight="600";t.textContent=e.name;
+    const r1=document.createElement("div");r1.className="row";
+    const s=f("Sets",e.sets||"",true),rp=f("Reps",e.reps||"",true),wt=f("Weight",e.weight||"",false);
+    r1.append(s[0],rp[0],wt[0]);
+    const r2=document.createElement("div");r2.className="row";
+    const nt=f("Notes",e.note||"",false);r2.appendChild(nt[0]);
+    w.append(t,r1,r2);R.appendChild(w);
+    logCtx.rows.push({e:e,s:s[1],r:rp[1],w:wt[1],n:nt[1]});
   });
-  $("bTitle").textContent=bEdit?"Edit workout":"Build a workout";
-  $("bsave").textContent=bEdit?"Update workout":"Save workout";
-  $("bcancel").style.display=bEdit?"inline-block":"none";
-  const L=$("planList");L.innerHTML="";
-  if(!S.plans.length){L.innerHTML='<div class="muted" style="margin-top:8px">No workouts saved yet.</div>';return}
-  [S.plans].forEach(grp=>{
-    grp.forEach(p=>{
-      const d=document.createElement("div");d.className="item";d.style.alignItems="flex-start";
-      const a=document.createElement("div");a.style.flex="1";a.style.minWidth="0";
-      const t=document.createElement("div");t.style.fontWeight="600";t.textContent=p.name;a.appendChild(t);
-      const items=p.ex.map(id=>S.exercises.find(e=>e.id===id)).filter(Boolean);
-      if(!items.length){const m=document.createElement("div");m.className="muted";m.textContent="No exercises";a.appendChild(m)}
-      items.forEach(e=>{const r=document.createElement("div");r.style.cssText="font-size:14px;margin-top:4px";const dt=exDetail(e);r.textContent=e.name+(dt?" \u00b7 "+dt:"");a.appendChild(r)});
-      const b=document.createElement("div");b.style.whiteSpace="nowrap";
-      const ed=document.createElement("button");ed.textContent="Edit";
-      ed.onclick=()=>{bEdit=p.id;bSel=new Set(p.ex);$("bname").value=p.name;$("bMsg").textContent="";S.wkOpen=S.wkOpen||{};S.wkOpen[2]=true;render();$("bname").scrollIntoView({behavior:"smooth",block:"center"})};
-      const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete workout");
-      x.onclick=()=>{S.plans.splice(S.plans.indexOf(p),1);if(bEdit===p.id)resetBuilder();save();render()};
-      b.append(ed,x);d.append(a,b);L.appendChild(d);
-    });
+  $("logView").style.display="flex";
+}
+function renderSched(){
+  const L=$("schedList");L.innerHTML="";
+  S.sched=S.sched.filter(s=>Array.isArray(s.ex)&&s.ex.some(id=>S.exercises.some(e=>e.id===id)));
+  const today=key(new Date());
+  if(!S.sched.length){L.innerHTML='<div class="muted" style="margin-top:8px">Nothing scheduled.</div>';return}
+  [...S.sched].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0).forEach(s=>{
+    const d=document.createElement("div");d.className="item";d.style.cssText="flex-wrap:wrap;align-items:flex-start";
+    const a=document.createElement("div");a.style.flex="1 1 100%";
+    const t=document.createElement("div");t.style.fontWeight="600";t.textContent=s.name;
+    const st=document.createElement("div");st.className="muted";st.style.fontSize="13px";
+    const due=s.date<=today;
+    st.textContent=fmtDate(s.date)+(s.date===today?" \u00b7 Today \u2014 confirm to log":s.date<today?" \u00b7 Overdue \u2014 confirm or skip":"");
+    const ex=document.createElement("div");ex.style.cssText="font-size:14px;margin-top:4px";
+    ex.textContent=s.ex.map(id=>(S.exercises.find(e=>e.id===id)||{}).name).filter(Boolean).join(", ");
+    a.append(t,st,ex);
+    const b=document.createElement("div");b.style.cssText="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;width:100%";
+    const ok=document.createElement("button");if(due)ok.className="primary";ok.textContent=due?"Confirm & log":"Confirm on "+fmtDate(s.date);ok.disabled=!due;
+    ok.style.cssText="padding:4px 10px;font-size:13px";ok.onclick=()=>openLog(s.name,s.ex,s.date,s.id,false);
+    const rm=document.createElement("button");rm.textContent=due?"Skip":"Remove";rm.style.cssText="padding:4px 10px;font-size:13px";
+    rm.onclick=()=>{S.sched=S.sched.filter(x=>x.id!==s.id);save();render()};
+    b.append(ok,rm);d.append(a,b);L.appendChild(d);
+  });
+}
+let histShow={};
+function renderHist(){
+  const L=$("histList");L.innerHTML="";
+  if(!S.wlog.length){L.innerHTML='<div class="muted" style="margin-top:8px">No workouts logged yet.</div>';return}
+  [...S.wlog].sort((a,b)=>(b.date+(b.t||"")).localeCompare(a.date+(a.t||""))).slice(0,15).forEach(l=>{
+    const d=document.createElement("div");d.className="item";d.style.display="block";
+    const hr=document.createElement("div");hr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px";
+    const a=document.createElement("div");a.style.cssText="flex:1;min-width:0";
+    const t=document.createElement("div");t.style.fontWeight="600";t.textContent=l.name;
+    const s=document.createElement("div");s.className="muted";s.style.fontSize="13px";s.textContent=fmtDate(l.date)+(l.t?" \u00b7 "+fmtT(l.t):"");
+    a.append(t,s);
+    const open=!!histShow[l.id];
+    const b=document.createElement("div");b.style.cssText="white-space:nowrap";
+    const tg=document.createElement("button");tg.textContent=open?"Hide":"Show";tg.style.cssText="padding:4px 10px;font-size:13px";tg.setAttribute("aria-expanded",open);
+    tg.onclick=()=>{histShow[l.id]=!open;renderHist()};
+    const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete logged workout");
+    x.onclick=()=>{S.wlog=S.wlog.filter(y=>y.id!==l.id);save();render()};
+    b.append(tg,x);hr.append(a,b);d.appendChild(hr);
+    const its=l.items||[],chs=its.filter(it=>it.chg);
+    if(chs.length){
+      chs.forEach(it=>{const p=document.createElement("div");p.style.cssText="margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--track);border-left:3px solid var(--accent);font-size:13px";p.textContent="Changed \u00b7 "+it.name+": "+it.chg;d.appendChild(p)});
+    }else if(l.chk){const p=document.createElement("div");p.className="muted";p.style.cssText="font-size:13px;margin-top:6px";p.textContent="No changes";d.appendChild(p)}
+    if(open){
+      const det=document.createElement("div");det.style.marginTop="8px";
+      its.forEach(it=>{
+        const r=document.createElement("div");r.style.cssText="font-size:14px;margin-top:4px";const dt=exDetail(it);r.textContent=it.name+(dt?" \u00b7 "+dt:"");
+        if(it.chg)r.style.fontWeight="600";
+        det.appendChild(r);
+        if(it.note){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=it.note;det.appendChild(q)}
+      });
+      d.appendChild(det);
+    }
+    L.appendChild(d);
   });
 }
 let pics=[],picDB=null,openId=null,delId=null,ppArm=false;
@@ -621,12 +694,14 @@ function renderInsight(){
   const dh=S.habits.filter(h=>!h.perWeek);
   if(dh.length){let done=0;dh.forEach(h=>ks.forEach(k=>{if((S.hlog[h.id]||{})[k])done++}));inRow(G,"Daily habits",Math.round(done/(dh.length*ks.length)*100)+"% completed")}
   else if(S.habits.length)inRow(G,"Habits",S.habits.length+" tracked");
-  inRow(G,"Workouts",S.plans.length?S.plans.length+" scheduled per week \u00b7 "+S.exercises.length+" exercises":"None scheduled");
+  const wl=S.wlog.filter(l=>ks.includes(l.date)).length;inRow(G,"Workouts",wl?wl+" logged"+(S.sched.length?" \u00b7 "+S.sched.length+" scheduled":""):(S.sched.length?S.sched.length+" scheduled":"None logged"));
   const F=[];
   const test=(label,fn)=>{const y=[],no=[];md.forEach(([k,m])=>{const r=fn(k);if(r===true)y.push(m);else if(r===false)no.push(m)});F.push({label:label,y:y,no:no})};
   test("Hit your protein goal",k=>protG(k)>0?protG(k)>=S.goal:null);
   test("Hit your water goal",k=>waterMl(k)>0?waterMl(k)>=S.water.goal:null);
   test("Protein at breakfast",k=>protG(k)>0?(S.days[k]||[]).some(e=>e.cat==="Breakfast"):null);
+  const fw=S.wlog.map(l=>l.date).sort()[0];
+  test("Logged a workout",k=>fw&&k>=fw?S.wlog.some(l=>l.date===k):null);
   S.habits.forEach(h=>{
     const cd=key(new Date(parseInt(h.id.slice(1),10)||0));
     test("Did "+h.name,k=>{const d=!!(S.hlog[h.id]||{})[k];return (d||k>=cd)?d:null});
@@ -682,19 +757,108 @@ function initWk(){
     while(hd.nextSibling)body.appendChild(hd.nextSibling);
     card.appendChild(body);
     card._b=btn;card._body=body;card._st=st;
-    btn.onclick=()=>{S.wkOpen=S.wkOpen||{};S.wkOpen[i]=(S.wkOpen[i]===false);save();render()};
+    const kk=card.id||i;btn.onclick=()=>{S.wkOpen=S.wkOpen||{};S.wkOpen[kk]=(S.wkOpen[kk]===false);save();render()};
   });
 }
 function renderWk(){
-  const cfg=[["Add exercise"],["My exercises",()=>S.exercises.length],[null],["My workouts",()=>S.plans.length],["Progress pics",()=>pics.length]];
+  const cfg={0:["Add exercise"],1:["My exercises and workouts",()=>S.exercises.length],cardSched:["Scheduled",()=>S.sched.length],cardHist:["Workout log",()=>S.wlog.length],cardProg:["Progress"],cardPics:["Progress pics",()=>pics.length]};
   document.querySelectorAll("#pageWorkouts>.card").forEach((card,i)=>{
     if(!card._body)return;
-    const open=!(S.wkOpen&&S.wkOpen[i]===false);
+    const kk=card.id||i;const open=!(S.wkOpen&&S.wkOpen[kk]===false);
     card._body.style.display=open?"block":"none";
     card._b.textContent=open?"Hide":"Show";
     card._b.setAttribute("aria-expanded",open);
-    const c=cfg[i];
+    const c=cfg[kk];
     if(c&&c[0])card._st.textContent=c[0]+(open||!c[1]?"":" ("+c[1]()+")");
+  });
+}
+const BASE_CATS=["Upper body","Lower body"];
+function allCats(){
+  const a=[...BASE_CATS,...(S.excats||[])];
+  S.exercises.forEach(e=>{if(e.cat&&!a.some(x=>x.toLowerCase()===e.cat.toLowerCase()))a.push(e.cat)});
+  return a;
+}
+function fillCatSelect(sel,val,withNew){
+  sel.innerHTML="";
+  allCats().forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o)});
+  if(withNew){const o=document.createElement("option");o.value="__new";o.textContent="Add a new category";sel.appendChild(o)}
+  if(val&&[...sel.options].some(o=>o.value===val))sel.value=val;
+}
+let progSel=null;
+function pnum(w){const m=String(w==null?"":w).match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):null}
+function kv(host,label,val,color){
+  const r=document.createElement("div");r.className="item";
+  const a=document.createElement("span");a.textContent=label;
+  const b=document.createElement("span");b.className="muted";b.style.textAlign="right";if(color){b.style.color=color;b.style.fontWeight="600"}b.textContent=val;
+  r.append(a,b);host.appendChild(r);
+}
+function renderProg(){
+  const sel=$("progEx"),prev=progSel||sel.value;sel.innerHTML="";
+  const ids=S.exercises.map(e=>[e.id,e.name]);
+  S.wlog.forEach(l=>(l.items||[]).forEach(it=>{if(!ids.some(x=>x[0]===it.exId))ids.push([it.exId,it.name+" (removed)"])}));
+  ids.forEach(x=>{const o=document.createElement("option");o.value=x[0];o.textContent=x[1];sel.appendChild(o)});
+  if(ids.some(x=>x[0]===prev))sel.value=prev;
+  progSel=sel.value;
+  const B=$("progBody");B.innerHTML="";
+  if(!ids.length){B.innerHTML='<div class="muted" style="margin-top:8px">Add exercises and log workouts to see progress.</div>';return}
+  const ss=[];
+  [...S.wlog].sort((a,b)=>(a.date+(a.t||"")).localeCompare(b.date+(b.t||""))).forEach(l=>(l.items||[]).forEach(it=>{if(it.exId===progSel)ss.push({date:l.date,sets:it.sets,reps:it.reps,weight:it.weight,w:pnum(it.weight)})}));
+  if(!ss.length){B.innerHTML='<div class="muted" style="margin-top:8px">No logged sessions for this exercise yet. Log a workout that includes it to see progress.</div>';return}
+  const nums=ss.filter(x=>x.w!=null);
+  if(nums.length){
+    const fi=nums[0],la=nums[nums.length-1],d=la.w-fi.w,unit=String(la.weight).replace(/^[\s\d.,-]+/,"").trim();
+    const sg=v=>(v>0?"+":"")+Math.round(v*10)/10+(unit?" "+unit:"");
+    if(nums.length>1){
+      const cut=new Date();cut.setDate(cut.getDate()-30);const ck=key(cut);
+      let bi=-1;for(let i=nums.length-1;i>=0;i--){if(nums[i].date<=ck){bi=i;break}}
+      let since="";if(bi<0){bi=0;since=" since "+fmtDate(nums[0].date)}
+      const ba=nums[bi],dm=la.w-ba.w,ab=Math.round(Math.abs(dm)*10)/10+(unit?" "+unit:"");
+      const box=document.createElement("div");box.style.cssText="margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--track);border-left:3px solid var(--accent)";
+      const l1=document.createElement("div");l1.style.cssText="font-size:16px;font-weight:700;color:"+(dm>0?"var(--accent)":dm<0?"var(--danger)":"var(--text)");
+      if(bi===nums.length-1)l1.textContent="No sessions logged in the last month";
+      else l1.textContent=(dm>0?"+":dm<0?"-":"")+(dm===0?"No change":ab)+(since||" in the last month");
+      box.appendChild(l1);
+      if(bi!==nums.length-1){const l2=document.createElement("div");l2.className="muted";l2.style.cssText="font-size:13px;margin-top:2px";l2.textContent=ba.weight+" \u2192 "+la.weight;box.appendChild(l2)}
+      if(bi>0||bi===nums.length-1){
+        const pc=fi.w?Math.round(d/fi.w*100):0;
+        const l3=document.createElement("div");l3.className="muted";l3.style.cssText="font-size:13px;margin-top:6px";
+        l3.textContent="Since "+fmtDate(fi.date)+": "+sg(d)+(fi.w?" ("+(d>0?"+":"")+pc+"%)":"");box.appendChild(l3);
+      }
+      B.appendChild(box);
+    }
+    if(nums.length>1){
+      let li=-1;for(let i=nums.length-1;i>0;i--){if(nums[i].w>nums[i-1].w){li=i;break}}
+      kv(B,"Last increase",li>0?fmtDate(nums[li].date)+" ("+sg(nums[li].w-nums[li-1].w)+")":"None yet");
+    }
+    kv(B,"Best weight",nums.reduce((m,x)=>x.w>m.w?x:m,nums[0]).weight);
+  }
+  if(nums.length>=2){
+    const W=320,H=150,pl=14,pr=14,pt=22,pb=24,ws=nums.map(x=>x.w),mn=Math.min(...ws),mx=Math.max(...ws),pad=((mx-mn)*0.15)||1,lo=mn-pad,hi=mx+pad;
+    const X=i=>pl+(W-pl-pr)*(i/(nums.length-1)),Y=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
+    let g='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:460px;display:block;margin-top:12px" role="img" aria-label="Weight over time">';
+    g+='<line x1="'+pl+'" y1="'+(H-pb)+'" x2="'+(W-pr)+'" y2="'+(H-pb)+'" stroke="var(--border)"/>';
+    g+='<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="'+nums.map((x,i)=>X(i)+","+Y(x.w)).join(" ")+'"/>';
+    nums.forEach((x,i)=>{
+      g+='<circle cx="'+X(i)+'" cy="'+Y(x.w)+'" r="4" fill="var(--accent)"/>';
+      if(nums.length<=10)g+='<text x="'+X(i)+'" y="'+(Y(x.w)-9)+'" text-anchor="middle" font-size="10" fill="var(--text)">'+x.w+'</text>';
+    });
+    g+='<text x="'+pl+'" y="'+(H-6)+'" font-size="10" fill="var(--muted)">'+nums[0].date.slice(5)+'</text><text x="'+(W-pr)+'" y="'+(H-6)+'" text-anchor="end" font-size="10" fill="var(--muted)">'+nums[nums.length-1].date.slice(5)+'</text></svg>';
+    B.insertAdjacentHTML("beforeend",g);
+  }
+  const hd=document.createElement("div");hd.className="muted";hd.style.cssText="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:14px";const sopen=S.progSessOpen!==false;
+  hd.textContent="Sessions"+(sopen?"":" ("+ss.length+")");hd.style.marginTop="0";
+  const hrow=document.createElement("div");hrow.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-top:14px";
+  const tg=document.createElement("button");tg.textContent=sopen?"Hide":"Show";tg.style.cssText="padding:4px 10px;font-size:13px";tg.setAttribute("aria-expanded",sopen);
+  tg.onclick=()=>{S.progSessOpen=!sopen;save();renderProg()};
+  hrow.append(hd,tg);B.appendChild(hrow);
+  const sw=document.createElement("div");sw.style.display=sopen?"block":"none";B.appendChild(sw);
+  [...ss].reverse().slice(0,10).forEach((x,i)=>{
+    const idx=ss.length-1-i,pv=ss[idx-1],dl=pv&&pv.w!=null&&x.w!=null?x.w-pv.w:null;
+    const r=document.createElement("div");r.className="item";
+    const a=document.createElement("span");a.className="muted";a.textContent=fmtDate(x.date);
+    const b=document.createElement("span");b.style.textAlign="right";b.style.fontSize="13px";b.textContent=exDetail(x)||"\u2014";
+    if(dl){const c=document.createElement("span");c.style.cssText="font-weight:600;margin-left:8px;color:"+(dl>0?"var(--accent)":"var(--danger)");c.textContent=(dl>0?"+":"")+Math.round(dl*10)/10;b.appendChild(c)}
+    r.append(a,b);sw.appendChild(r);
   });
 }
 function exDetail(e){
@@ -704,12 +868,19 @@ function exDetail(e){
 let editId=null;
 function renderWorkouts(){
   const L=$("exList");L.innerHTML="";
+  fillCatSelect($("excat"),$("excat").value,true);
   if(!S.exercises.length){L.innerHTML='<div class="muted" style="margin-top:8px">No exercises yet.</div>';return}
-  ["Upper body","Lower body","Uncategorized"].forEach(cat=>{
-    const grp=S.exercises.filter(e=>(e.cat||"Uncategorized")===cat);
+  [...allCats(),"Uncategorized"].forEach(cat=>{
+    const grp=S.exercises.filter(e=>(e.cat||"Uncategorized").toLowerCase()===cat.toLowerCase());
     if(!grp.length)return;
-    const hd=document.createElement("div");hd.textContent=cat;hd.className="muted";hd.style.cssText="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em;margin-top:14px";
-    L.appendChild(hd);
+    const hd=document.createElement("div");hd.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-top:14px";
+    const hl=document.createElement("span");hl.className="muted";hl.style.cssText="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em";
+    const open=!(S.catOpen&&S.catOpen[cat]===false);
+    hl.textContent=cat+(open?"":" ("+grp.length+")");
+    const tg=document.createElement("button");tg.textContent=open?"Hide":"Show";tg.style.cssText="padding:4px 10px;font-size:13px";tg.setAttribute("aria-expanded",open);
+    tg.onclick=()=>{S.catOpen=S.catOpen||{};S.catOpen[cat]=!open;save();render()};
+    hd.append(hl,tg);L.appendChild(hd);
+    if(!open)return;
     grp.forEach(e=>{
     const d=document.createElement("div");d.className="item";d.style.alignItems="flex-start";
     if(editId===e.id){
@@ -717,7 +888,7 @@ function renderWorkouts(){
       const w=document.createElement("div");w.className="row";w.style.marginTop="0";
       const mk=(ph,val,num,fl)=>{const inp=document.createElement("input");inp.placeholder=ph;inp.value=val==null?"":val;if(num){inp.type="number";inp.inputMode="numeric";inp.min="0"}inp.style.flex=fl;return inp};
       const n=mk("Exercise",e.name,false,"1 1 100%"),s=mk("Sets",e.sets||"",true,"1"),r=mk("Reps",e.reps||"",true,"1"),wt=mk("Weight",e.weight,false,"1"),nt=mk("Notes",e.note,false,"1 1 100%");
-      const ct=document.createElement("select");ct.style.flex="1 1 100%";["Upper body","Lower body"].forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;ct.appendChild(o)});ct.value=e.cat||"Upper body";
+      const ct=document.createElement("select");ct.style.flex="1 1 100%";allCats().forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;ct.appendChild(o)});ct.value=e.cat||"Upper body";
       const sv=document.createElement("button");sv.className="primary";sv.textContent="Save";
       const cn=document.createElement("button");cn.textContent="Cancel";
       sv.onclick=()=>{
@@ -734,10 +905,12 @@ function renderWorkouts(){
       const dt=exDetail(e);if(dt){const q=document.createElement("div");q.textContent=dt;a.appendChild(q)}
       if(e.note){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=e.note;a.appendChild(q)}
       const b=document.createElement("div");b.style.whiteSpace="nowrap";
-      const ed=document.createElement("button");ed.textContent="Edit";ed.onclick=()=>{editId=e.id;render()};
+      const ed=document.createElement("button");ed.textContent="Edit";ed.style.cssText="padding:4px 10px;font-size:13px";ed.onclick=()=>{editId=e.id;render()};
       const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete exercise");
       x.onclick=()=>{S.exercises.splice(S.exercises.indexOf(e),1);save();render()};
-      b.append(ed,x);d.append(a,b);
+      const cb=document.createElement("input");cb.type="checkbox";cb.checked=bSel.has(e.id);cb.style.cssText="width:20px;height:20px;padding:0;margin:2px 10px 0 0;flex:none;accent-color:var(--accent)";cb.setAttribute("aria-label","Select "+e.name);
+      cb.onchange=()=>{if(cb.checked)bSel.add(e.id);else bSel.delete(e.id);updBar()};
+      b.append(ed,x);d.append(cb,a,b);
     }
     L.appendChild(d);
     });
@@ -757,7 +930,7 @@ function renderFoods(){
   });
 }
 function render(){
-  showTab();renderHabits();renderWorkouts();renderPlans();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderWk();
+  showTab();renderHabits();renderWorkouts();updBar();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderSched();renderHist();renderProg();renderWk();
   const today=key(new Date())===key(cur);
   $("dayLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("next").disabled=today;
@@ -832,15 +1005,49 @@ $("cmpClose").onclick=()=>{$("cmpView").style.display="none"};
 $("cmpView").addEventListener("click",e=>{if(e.target.id==="cmpView")$("cmpView").style.display="none"});
 $("ppView").addEventListener("click",e=>{if(e.target.id==="ppView")$("ppView").style.display="none"});
 $("ppDel").onclick=async()=>{if(!openId)return;if(!ppArm){ppArm=true;$("ppDel").textContent="Tap again to confirm";return}ppArm=false;$("ppDel").textContent="Delete";const id=openId;await dbDel(id);pics=pics.filter(p=>p.id!==id);openId=null;$("ppView").style.display="none";renderPics()};
-$("bsave").onclick=()=>{
-  const n=$("bname").value.trim();
-  if(!n||!bSel.size){$("bMsg").textContent=!n?"Enter a workout name.":"Pick at least one exercise.";return}
-  const ex=S.exercises.filter(e=>bSel.has(e.id)).map(e=>e.id);
-  if(bEdit){const p=S.plans.find(x=>x.id===bEdit);if(p){p.name=n;p.ex=ex}}
-  else S.plans.push({id:"p"+Date.now(),name:n,ex:ex});
-  resetBuilder();save();render();
+$("progEx").onchange=()=>{progSel=$("progEx").value;renderProg()};
+$("bLog").onclick=()=>{
+  if(!bSel.size){$("bMsg").textContent="Tick at least one exercise above.";return}
+  $("bMsg").textContent="";
+  openLog($("bname").value.trim()||"Workout",S.exercises.filter(e=>bSel.has(e.id)).map(e=>e.id),key(new Date()),null,true);
 };
-$("bcancel").onclick=()=>{resetBuilder();render()};
+$("bSched").onclick=()=>{
+  if(!bSel.size){$("bMsg").textContent="Tick at least one exercise above.";return}
+  $("bMsg").textContent="";
+  $("bdate").value=key(new Date());$("bdate").min=key(new Date());
+  $("bSchedRow").style.display="flex";
+};
+$("bSchedCancel").onclick=()=>{$("bSchedRow").style.display="none"};
+$("bSchedOk").onclick=()=>{
+  if(!bSel.size||!$("bdate").value)return;
+  const nm=$("bname").value.trim()||"Workout",dt=$("bdate").value;
+  S.sched.push({id:"s"+Date.now(),name:nm,date:dt,ex:S.exercises.filter(e=>bSel.has(e.id)).map(e=>e.id)});
+  resetBuilder();$("bSchedRow").style.display="none";save();
+  render();
+};
+$("bClear").onclick=()=>{resetBuilder();$("bSchedRow").style.display="none";render()};
+$("logOk").onclick=()=>{
+  if(!logCtx)return;
+  const items=[],changes=[];
+  logCtx.rows.forEach(r=>{
+    const e=r.e,ns=parseInt(r.s.value,10)||0,nr=parseInt(r.r.value,10)||0,nw=r.w.value.trim(),nn=r.n.value.trim();
+    const it={exId:e.id,name:e.name,sets:ns,reps:nr,weight:nw,note:nn};items.push(it);
+    const parts=[];
+    if((e.weight||"")!==nw)parts.push("weight "+(e.weight||"none")+" \u2192 "+(nw||"none"));
+    if((e.sets||0)!==ns)parts.push("sets "+(e.sets||0)+" \u2192 "+ns);
+    if((e.reps||0)!==nr)parts.push("reps "+(e.reps||0)+" \u2192 "+nr);
+    if((e.note||"")!==nn)parts.push("notes");
+    if(parts.length){it.chg=parts.join(", ");changes.push(e.name+": "+parts.join(", "));e.sets=ns;e.reps=nr;e.weight=nw;e.note=nn}
+  });
+  const nm=logCtx.name,fs=logCtx.fromSel;
+  S.wlog.push({id:"l"+Date.now(),name:nm,date:logCtx.date,t:nowT(),items:items,chk:true});
+  if(logCtx.schedId)S.sched=S.sched.filter(s=>s.id!==logCtx.schedId);
+  logCtx=null;$("logView").style.display="none";
+  if(fs){resetBuilder();$("bSchedRow").style.display="none"}
+  save();
+  render();
+};
+$("logCancel").onclick=()=>{logCtx=null;$("logView").style.display="none"};
 $("tabWt").onclick=()=>{tab="water";render()};
 $("wtToggle").onclick=()=>{S.wtOpen=(S.wtOpen===false);save();render()};
 $("wtprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
@@ -849,7 +1056,17 @@ $("wtadd").onclick=()=>{const v=parseFloat($("wtamt").value);if(v>0){addWater(fr
 $("wtamt").addEventListener("keydown",e=>{if(e.key==="Enter")$("wtadd").click()});
 $("wtsave").onclick=()=>{const v=parseFloat($("wtgoal").value);if(v>0){S.water.goal=Math.round(fromU(v));save();render()}};
 $("wtunit").onchange=()=>{S.water.unit=$("wtunit").value;save();render()};
-$("addEx").onclick=()=>{const n=$("exname").value.trim();if(!n)return;const a=parseInt($("exsets").value,10),b=parseInt($("exreps").value,10);S.exercises.push({id:"e"+Date.now(),name:n,sets:a>0?a:0,reps:b>0?b:0,weight:$("exweight").value.trim(),note:$("exnote").value.trim(),cat:$("excat").value});["exname","exsets","exreps","exweight","exnote"].forEach(id=>{$(id).value=""});save();render()};
+$("excat").onchange=()=>{const n=$("excat").value==="__new";$("newCatRow").style.display=n?"flex":"none";if(n)$("newcat").focus()};
+$("addCat").onclick=()=>{
+  const v=$("newcat").value.trim().replace(/\s+/g," ");
+  if(!v||v.toLowerCase()==="uncategorized")return;
+  const ex=allCats().find(c=>c.toLowerCase()===v.toLowerCase());
+  if(!ex){S.excats=S.excats||[];S.excats.push(v)}
+  $("newcat").value="";$("newCatRow").style.display="none";
+  fillCatSelect($("excat"),ex||v,true);
+  save();render();
+};
+$("addEx").onclick=()=>{const n=$("exname").value.trim();if(!n)return;if($("excat").value==="__new"){$("newcat").focus();return}const a=parseInt($("exsets").value,10),b=parseInt($("exreps").value,10);S.exercises.push({id:"e"+Date.now(),name:n,sets:a>0?a:0,reps:b>0?b:0,weight:$("exweight").value.trim(),note:$("exnote").value.trim(),cat:$("excat").value});S.catOpen=S.catOpen||{};S.catOpen[$("excat").value]=true;["exname","exsets","exreps","exweight","exnote"].forEach(id=>{$(id).value=""});save();render()};
 initWk();
 $("foodsToggle").onclick=()=>{S.foodsOpen=(S.foodsOpen===false);save();render()};
 $("entToggle").onclick=()=>{S.entOpen=(S.entOpen===false);save();render()};
