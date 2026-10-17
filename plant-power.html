@@ -113,7 +113,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <div class="muted" id="hSummary" style="text-align:center;margin-top:8px"></div>
     </div>
     <div class="card">
-      <div class="day"><strong id="hTitle">My habits</strong><button id="hToggle" aria-expanded="true">Hide</button></div>
+      <div class="day"><strong id="hTitle">My habits</strong><span style="display:flex;gap:6px"><button id="hReorder" style="display:none;padding:4px 10px;font-size:13px">Reorder</button><button id="hToggle" aria-expanded="true" style="padding:4px 10px;font-size:13px">Hide</button></span></div>
       <div id="hBody">
       <div id="habitList"></div>
       <div class="muted" style="margin-top:12px">New habit and goal</div>
@@ -159,7 +159,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
         <div class="row" id="bSchedRow" style="display:none"><input id="bdate" type="date" style="flex:1" aria-label="Workout date"><button class="primary" id="bSchedOk">Add to schedule</button><button id="bSchedCancel">Cancel</button></div>
       </div>
       <div style="margin-top:16px">
-        <div class="muted" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Saved workouts</div>
+        <div style="display:flex;align-items:center;justify-content:space-between"><div class="muted" id="planTitle" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Saved workouts</div><button id="planToggle" style="padding:4px 10px;font-size:13px">Hide</button></div>
         <div id="planList"></div>
       </div>
     </div>
@@ -192,6 +192,23 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <div class="row" style="margin-top:12px"><button id="ppCmp">Compare two photos</button><button class="primary" id="ppShow" style="display:none" disabled>View comparison</button></div>
       <div class="muted" id="ppHint" style="margin-top:8px"></div>
       <div id="ppGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px"></div>
+    </div>
+    <div class="card" id="cardGoals">
+      <strong>Goals</strong>
+      <div class="muted">Set a target, then log your progress towards it.</div>
+      <div class="row"><input id="gname" placeholder="Goal" style="flex:1 1 100%"></div>
+      <div class="row">
+        <input id="gstart" type="number" inputmode="decimal" placeholder="Starting" style="flex:1">
+        <input id="gtarget" type="number" inputmode="decimal" placeholder="Target" style="flex:1">
+        <input id="gunit" placeholder="Unit (min, lb, mi)" style="flex:1">
+      </div>
+      <div class="muted" style="font-size:13px;margin-top:10px">Target date (optional)</div>
+      <div class="row" style="margin-top:4px">
+        <input id="gdate" type="date" aria-label="Target date (optional)" style="flex:1">
+        <button class="primary" id="gadd">Add goal</button>
+      </div>
+      <div class="muted" id="gMsg" style="margin-top:8px;color:var(--danger)"></div>
+      <div id="goalList"></div>
     </div>
   </div>
 
@@ -263,19 +280,14 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
         <select id="inRange"><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
       </div>
       <div class="muted" id="inNote" style="margin-top:8px"></div>
-    </div>
-    <div class="card">
-      <strong>At a glance</strong>
-      <div id="inGlance"></div>
-    </div>
-    <div class="card">
-      <strong>What goes with better moods</strong>
-      <div class="muted">Average mood (1 to 5) on days you did it vs. days you didn't. A +0.6 means mood averaged 0.6 points higher on those days.</div>
+      <div class="muted" style="font-size:13px;margin-top:8px">Good days are mood 4 or higher; lower days are under 3. Protein and water only count days you logged.</div>
+      <div class="muted" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:18px">Good days vs lower days</div>
+      <div id="inGroups"></div>
+      <div class="muted" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:18px">Average mood when you…</div>
+      <div class="muted" style="font-size:13px">Average mood (1 to 5) on days you did it vs. days you didn't. A +0.6 means 0.6 points higher.</div>
       <div id="inFactors"></div>
-    </div>
-    <div class="card">
-      <strong>Mood by day of week</strong>
-      <div id="inDow"></div>
+      <div class="muted" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-top:18px">From your mood notes</div>
+      <div id="inNotes"></div>
     </div>
     <div class="card">
       <strong>Morning vs evening</strong>
@@ -303,7 +315,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 </div>
 
 <script>
-let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}},mood:{},wlog:[],sched:[]};
+let S={goal:120,days:{},foods:[],habits:[],hlog:{},exercises:[],plans:[],water:{goal:1893,unit:"oz",days:{}},mood:{},wlog:[],sched:[],goals:[]};
 try{const r=localStorage.getItem("protein-tracker");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 try{Object.keys(S.water.days).forEach(k=>{S.water.days[k]=S.water.days[k].map(x=>typeof x==="number"?{ml:x}:x)})}catch(e){}
 const save=()=>{try{localStorage.setItem("protein-tracker",JSON.stringify(S))}catch(e){}};
@@ -327,7 +339,7 @@ function showTab(){
   $("tabP").classList.toggle("on",tab==="protein");$("tabH").classList.toggle("on",tab==="habits");$("tabW").classList.toggle("on",tab==="workouts");$("tabWt").classList.toggle("on",tab==="water");$("tabM").classList.toggle("on",tab==="mood");$("tabI").classList.toggle("on",tab==="insight");
 }
 const FREQ=[["Daily",0],["Once a week",1],["Twice a week",2],["3 times a week",3],["4 times a week",4],["5 times a week",5],["6 times a week",6]];
-function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function weekStart(d){const x=new Date(d);x.setHours(0,0,0,0);x.setDate(x.getDate()-x.getDay());return x}
 function countWeek(id,ws){const L=S.hlog[id]||{};let c=0;for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);if(L[key(d)])c++}return c}
 function weekStreak(id,n){
   let ws=weekStart(new Date()),w=0;
@@ -349,6 +361,8 @@ function renderHabits(){
   $("hBody").style.display=hopen?"block":"none";
   $("hToggle").textContent=hopen?"Hide":"Show";
   $("hToggle").setAttribute("aria-expanded",hopen);
+  const canRe=hopen&&S.habits.length>1;if(!canRe)habRe=false;
+  $("hReorder").style.display=canRe?"inline-block":"none";$("hReorder").textContent=habRe?"Done":"Reorder";
   $("hTitle").textContent="My habits"+(hopen||!S.habits.length?"":" ("+S.habits.length+")");
   const k=key(cur),L=$("habitList");L.innerHTML="";
   const done=S.habits.filter(h=>(S.hlog[h.id]||{})[k]).length;
@@ -373,7 +387,13 @@ function renderHabits(){
     const st=sel;
     const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete habit");
     x.onclick=()=>{S.habits.splice(i,1);delete S.hlog[h.id];save();render()};
-    d.append(lb,st,x);L.appendChild(d);
+    if(habRe){
+      const mv=dir=>{const j=i+dir,a=S.habits;if(j<0||j>=a.length)return;const tmp=a[i];a[i]=a[j];a[j]=tmp;save();render()};
+      const up=document.createElement("button");up.textContent="\u25b2";up.setAttribute("aria-label","Move "+h.name+" up");up.disabled=i===0;up.style.cssText="padding:4px 10px;font-size:13px;margin-left:6px";up.onclick=()=>mv(-1);
+      const dn=document.createElement("button");dn.textContent="\u25bc";dn.setAttribute("aria-label","Move "+h.name+" down");dn.disabled=i===S.habits.length-1;dn.style.cssText="padding:4px 10px;font-size:13px;margin-left:6px";dn.onclick=()=>mv(1);
+      d.append(lb,up,dn);
+    }else d.append(lb,st,x);
+    L.appendChild(d);
   });
   const G=$("habitGrid");G.innerHTML="";
   if(!S.habits.length){G.innerHTML='<div class="muted" style="margin-top:8px">Nothing to show yet.</div>';return}
@@ -455,9 +475,9 @@ function renderWater(){
     H.appendChild(c);
   }
 }
-const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 let bSel=new Set(),bEdit=null;
-const dayIdx=d=>(d.getDay()+6)%7;
+const dayIdx=d=>d.getDay();
 function resetBuilder(){bSel=new Set();$("bname").value="";$("bMsg").textContent=""}
 let logCtx=null;
 function updBar(){
@@ -468,6 +488,7 @@ function updBar(){
 function openLog(name,exIds,date,schedId,fromSel){
   const items=exIds.map(id=>S.exercises.find(e=>e.id===id)).filter(Boolean);
   logCtx={name:name,date:date,schedId:schedId,fromSel:fromSel,rows:[]};
+  $("logOk").textContent="Confirm & log";
   $("logTitle").textContent="Log: "+name;
   $("logSub").textContent=fmtDate(date)+" \u00b7 Review sets, reps, weight and notes, then confirm. Any changes also update My exercises and workouts.";
   const R=$("logRows");R.innerHTML="";
@@ -525,7 +546,7 @@ function renderHist(){
     const hr=document.createElement("div");hr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px";
     const a=document.createElement("div");a.style.cssText="flex:1;min-width:0";
     const t=document.createElement("div");t.style.fontWeight="600";t.textContent=l.name;
-    const s=document.createElement("div");s.className="muted";s.style.fontSize="13px";s.textContent=fmtDate(l.date)+(l.t?" \u00b7 "+fmtT(l.t):"");
+    const s=document.createElement("div");s.className="muted";s.style.fontSize="13px";s.textContent=fmtDate(l.date)+(l.t?" \u00b7 "+fmtT(l.t):"")+(l.edited?" \u00b7 Edited":"");
     a.append(t,s);
     const open=!!histShow[l.id];
     const b=document.createElement("div");b.style.cssText="white-space:nowrap";
@@ -533,7 +554,8 @@ function renderHist(){
     tg.onclick=()=>{histShow[l.id]=!open;renderHist()};
     const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete logged workout");
     x.onclick=()=>{S.wlog=S.wlog.filter(y=>y.id!==l.id);save();render()};
-    b.append(tg,x);hr.append(a,b);d.appendChild(hr);
+    const ed=document.createElement("button");ed.textContent="Edit";ed.style.cssText="padding:4px 10px;font-size:13px;margin-left:6px";ed.onclick=()=>openEditLog(l);
+    b.append(tg,ed,x);hr.append(a,b);d.appendChild(hr);
     const its=l.items||[],chs=its.filter(it=>it.chg);
     if(chs.length){
       chs.forEach(it=>{const p=document.createElement("div");p.style.cssText="margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--track);border-left:3px solid var(--accent);font-size:13px";p.textContent="Changed \u00b7 "+it.name+": "+it.chg;d.appendChild(p)});
@@ -685,20 +707,34 @@ function renderInsight(){
   const n=parseInt($("inRange").value,10),ks=dKeys(n);
   const md=ks.map(k=>[k,moodDay(k)]).filter(x=>x[1]!=null);
   $("inNote").textContent=md.length<7?"Log mood for at least 7 days to see patterns. You have "+md.length+" in this range.":"Based on "+md.length+" days with mood logged. These are patterns, not proof of cause.";
-  const G=$("inGlance");G.innerHTML="";
-  if(md.length){
-    const avg=mean(md.map(x=>x[1]));let tr="";
-    if(md.length>=6){const h=Math.floor(md.length/2),d=mean(md.slice(h).map(x=>x[1]))-mean(md.slice(0,h).map(x=>x[1]));tr=Math.abs(d)<0.3?" \u00b7 steady":d>0?" \u00b7 trending up":" \u00b7 trending down"}
-    inRow(G,"Average mood",avg.toFixed(1)+" / 5"+tr);
-  }else inRow(G,"Average mood","No mood logged yet");
-  const pk=ks.filter(k=>protG(k)>0),ph=pk.filter(k=>protG(k)>=S.goal).length;
-  inRow(G,"Protein",pk.length?Math.round(mean(pk.map(protG)))+" g avg \u00b7 goal hit "+ph+" of "+pk.length+" logged days":"Nothing logged");
-  const wk=ks.filter(k=>waterMl(k)>0),wh=wk.filter(k=>waterMl(k)>=S.water.goal).length;
-  inRow(G,"Water",wk.length?fmtU(mean(wk.map(waterMl)))+" "+uLabel()+" avg \u00b7 goal hit "+wh+" of "+wk.length+" logged days":"Nothing logged");
-  const dh=S.habits.filter(h=>!h.perWeek);
-  if(dh.length){let done=0;dh.forEach(h=>ks.forEach(k=>{if((S.hlog[h.id]||{})[k])done++}));inRow(G,"Daily habits",Math.round(done/(dh.length*ks.length)*100)+"% completed")}
-  else if(S.habits.length)inRow(G,"Habits",S.habits.length+" tracked");
-  const wl=S.wlog.filter(l=>ks.includes(l.date)).length;inRow(G,"Workouts",wl?wl+" logged"+(S.sched.length?" \u00b7 "+S.sched.length+" scheduled":""):(S.sched.length?S.sched.length+" scheduled":"None logged"));
+  const good=md.filter(x=>x[1]>=4).map(x=>x[0]),low=md.filter(x=>x[1]<3).map(x=>x[0]);
+  const GR=$("inGroups");GR.innerHTML="";
+  if(good.length<2||low.length<2){
+    GR.innerHTML='<div class="muted" style="margin-top:8px">Not enough days yet. This needs at least 2 good days (mood 4 or higher) and 2 lower days (under 3) in this range. You have '+good.length+' and '+low.length+'.</div>';
+  }else{
+    const avg=(keys,f,inc)=>{const a=keys.map(f).filter(v=>v!=null&&(inc||v>0));return a.length?mean(a):null};
+    const addRow=(label,gv,lv,fmt)=>{
+      if(gv==null||lv==null)return;
+      const r=document.createElement("div");r.className="item";r.style.display="block";
+      const t=document.createElement("div");t.textContent=label;
+      const rel=(gv-lv)/Math.max(Math.abs(lv),1),ph=rel>0.05?"higher on good days":rel<-0.05?"lower on good days":"about the same";
+      const m=document.createElement("div");m.className="muted";m.style.fontSize="13px";
+      m.appendChild(document.createTextNode("Good days "+fmt(gv)+" \u00b7 Lower days "+fmt(lv)+" \u2014 "));
+      const sp=document.createElement("span");sp.textContent=ph;if(rel>0.05){sp.style.color="var(--accent)";sp.style.fontWeight="600"}
+      m.appendChild(sp);r.append(t,m);GR.appendChild(r);
+    };
+    addRow("Protein",avg(good,protG),avg(low,protG),v=>Math.round(v)+" g");
+    addRow("Water",avg(good,waterMl),avg(low,waterMl),v=>fmtU(v)+" "+uLabel());
+    const dh=S.habits.filter(h=>!h.perWeek);
+    if(dh.length){const df=k=>100*dh.filter(h=>(S.hlog[h.id]||{})[k]).length/dh.length;addRow("Daily habits completed",avg(good,df,true),avg(low,df,true),v=>Math.round(v)+"%")}
+    if(S.wlog.length){const wf=k=>S.wlog.some(l=>l.date===k)?100:0;addRow("Days with a logged workout",avg(good,wf,true),avg(low,wf,true),v=>Math.round(v)+"%")}
+    S.habits.forEach(h=>{
+      const cd=key(new Date(parseInt(h.id.slice(1),10)||0));
+      const ok=k=>{const d=!!(S.hlog[h.id]||{})[k];return (d||k>=cd)?(d?100:0):null};
+      addRow(h.name,avg(good,ok,true),avg(low,ok,true),v=>Math.round(v)+"% of days");
+    });
+    if(!GR.children.length)GR.innerHTML='<div class="muted" style="margin-top:8px">No protein, water, habit or workout data overlaps with these days yet.</div>';
+  }
   const F=[];
   const test=(label,fn)=>{const y=[],no=[];md.forEach(([k,m])=>{const r=fn(k);if(r===true)y.push(m);else if(r===false)no.push(m)});F.push({label:label,y:y,no:no})};
   test("Hit your protein goal",k=>protG(k)>0?protG(k)>=S.goal:null);
@@ -725,11 +761,34 @@ function renderInsight(){
   const rest=F.length-ready.length;
   if(!ready.length)FL.innerHTML='<div class="muted" style="margin-top:8px">Not enough overlapping data yet. Each comparison needs at least 3 days with and 3 days without, with mood logged.</div>';
   else if(rest>0){const m=document.createElement("div");m.className="muted";m.style.cssText="margin-top:14px;font-size:13px";m.textContent=rest+" more comparison"+(rest>1?"s":"")+" need more days of data.";FL.appendChild(m)}
-  const DW=$("inDow");DW.innerHTML="";
-  const by=[[],[],[],[],[],[],[]];
-  md.forEach(([k,m])=>{const p=k.split("-").map(Number);by[dayIdx(new Date(p[0],p[1]-1,p[2]))].push(m)});
-  if(!md.length)DW.innerHTML='<div class="muted" style="margin-top:8px">No mood logged yet.</div>';
-  by.forEach((a,i)=>{if(a.length){const v=mean(a);barRow(DW,DAYS[i].slice(0,3),v,v.toFixed(1)+" ("+a.length+")",34)}});
+  const NO=$("inNotes");NO.innerHTML="";
+  const notes=[];
+  ks.forEach(k=>{const m=S.mood[k]||{};["am","pm"].forEach(per=>{const e=m[per];if(e&&e.note&&e.note.trim())notes.push({k:k,per:per,v:e.v||null,note:e.note.trim()})})});
+  if(!notes.length){
+    NO.innerHTML='<div class="muted" style="margin-top:8px">No mood notes in this range. Add notes on the Mood page to see what shows up on good and lower days.</div>';
+  }else{
+    const STOP=new Set("the and for that this with have has had was were are but not you your just very really got get then than too also from about after before again all can did out they them there here what when which who would could should how its been being into over onto still more some much feel felt feeling day today".split(" "));
+    const words=txt=>txt.toLowerCase().replace(/[^a-z\s']/g," ").split(/\s+/).filter(w=>w.length>2&&!STOP.has(w));
+    const topWords=pred=>{const cnt={};notes.filter(pred).forEach(n=>{new Set(words(n.note)).forEach(w=>{cnt[w]=(cnt[w]||0)+1})});return Object.entries(cnt).filter(x=>x[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,6)};
+    const chipRow=(label,list)=>{
+      const w=document.createElement("div");w.style.marginTop="10px";
+      const l=document.createElement("div");l.className="muted";l.style.fontSize="13px";l.textContent=label;w.appendChild(l);
+      if(!list.length){const e=document.createElement("div");e.className="muted";e.style.cssText="font-size:13px;margin-top:4px";e.textContent="No repeated words yet.";w.appendChild(e)}
+      list.forEach(x=>{const c=document.createElement("span");c.style.cssText="display:inline-block;margin:6px 6px 0 0;padding:2px 10px;border-radius:999px;background:var(--track);font-size:13px";c.textContent=x[0]+" ("+x[1]+")";w.appendChild(c)});
+      NO.appendChild(w);
+    };
+    chipRow("Often in notes on good days (Good or Great)",topWords(n=>n.v>=4));
+    chipRow("Often in notes on lower days (Poor or Bad)",topWords(n=>n.v&&n.v<=2));
+    const rh=document.createElement("div");rh.className="muted";rh.style.cssText="font-size:13px;margin-top:14px";rh.textContent="Recent notes";NO.appendChild(rh);
+    [...notes].sort((a,b)=>(b.k+(b.per==="pm"?"1":"0")).localeCompare(a.k+(a.per==="pm"?"1":"0"))).slice(0,6).forEach(n=>{
+      const r=document.createElement("div");r.className="item";r.style.cssText="align-items:flex-start;gap:10px;justify-content:flex-start";
+      if(n.v){const ic=document.createElement("span");ic.style.cssText="display:flex;flex:none";ic.innerHTML=moodIcon(n.v,22);r.appendChild(ic)}
+      const b=document.createElement("div");b.style.cssText="flex:1;min-width:0";
+      const t=document.createElement("div");t.textContent=n.note;
+      const m=document.createElement("div");m.className="muted";m.style.fontSize="12px";m.textContent=fmtDate(n.k)+" \u00b7 "+(n.per==="am"?"Morning":"Evening");
+      b.append(t,m);r.appendChild(b);NO.appendChild(r);
+    });
+  }
   const AP=$("inAmPm");AP.innerHTML="";
   const ams=ks.map(k=>(S.mood[k]||{}).am).filter(x=>x&&x.v).map(x=>x.v);
   const pms=ks.map(k=>(S.mood[k]||{}).pm).filter(x=>x&&x.v).map(x=>x.v);
@@ -765,7 +824,7 @@ function initWk(){
   });
 }
 function renderWk(){
-  const cfg={0:["Add exercise"],1:["My exercises and workouts",()=>S.exercises.length],cardSched:["Scheduled",()=>S.sched.length],cardHist:["Workout log",()=>S.wlog.length],cardProg:["Progress"],cardPics:["Progress pics",()=>pics.length]};
+  const cfg={0:["Add exercise"],1:["My exercises and workouts",()=>S.exercises.length],cardSched:["Scheduled",()=>S.sched.length],cardHist:["Workout log",()=>S.wlog.length],cardProg:["Progress"],cardGoals:["Goals",()=>(S.goals||[]).filter(g=>!g.done).length],cardPics:["Progress pics",()=>pics.length]};
   document.querySelectorAll("#pageWorkouts>.card").forEach((card,i)=>{
     if(!card._body)return;
     const kk=card.id||i;const open=!(S.wkOpen&&S.wkOpen[kk]===false);
@@ -868,6 +927,11 @@ function renderProg(){
 let planSched=null;
 function renderPlans(){
   const L=$("planList");L.innerHTML="";
+  const popen=S.plansOpen!==false;
+  L.style.display=popen?"block":"none";
+  $("planToggle").textContent=popen?"Hide":"Show";
+  $("planToggle").setAttribute("aria-expanded",popen);
+  $("planTitle").textContent="Saved workouts"+(popen||!(S.plans||[]).length?"":" ("+S.plans.length+")");
   if(!S.plans||!S.plans.length){L.innerHTML='<div class="muted" style="margin-top:8px">No saved workouts yet. Tick exercises, name the workout, and tap Save workout.</div>';return}
   const sm="padding:4px 10px;font-size:13px";
   S.plans.forEach(p=>{
@@ -899,6 +963,84 @@ function renderPlans(){
     }
     L.appendChild(d);
   });
+}
+function goalPct(g){
+  const span=g.target-g.start;
+  if(!span)return g.done?100:0;
+  return Math.max(0,Math.min(100,(g.cur-g.start)/span*100));
+}
+const goalReached=g=>g.target<g.start?g.cur<=g.target:g.cur>=g.target;
+const fmtN=v=>String(Math.round(v*100)/100);
+function renderGoals(){
+  S.goals=S.goals||[];
+  const L=$("goalList");L.innerHTML="";
+  if(!S.goals.length){L.innerHTML='<div class="muted" style="margin-top:8px">No goals yet. Add one above.</div>';return}
+  const sm="padding:4px 10px;font-size:13px",today=key(new Date());
+  [...S.goals].sort((a,b)=>(a.done?1:0)-(b.done?1:0)).forEach(g=>{
+    const u=g.unit?" "+g.unit:"";
+    const d=document.createElement("div");d.className="item";d.style.display="block";
+    const hr=document.createElement("div");hr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px";
+    const t=document.createElement("div");t.style.cssText="font-weight:600;flex:1;min-width:0";t.textContent=(g.done?"\u2713 ":"")+g.name;
+    const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete goal");
+    x.onclick=()=>{S.goals=S.goals.filter(q=>q.id!==g.id);save();render()};
+    hr.append(t,x);d.appendChild(hr);
+    const st=document.createElement("div");st.style.cssText="font-size:14px;margin-top:4px";
+    st.textContent=fmtN(g.cur)+" / "+fmtN(g.target)+u+" \u00b7 "+Math.round(goalPct(g))+"%";d.appendChild(st);
+    const bar=document.createElement("div");bar.className="bar";bar.style.margin="8px 0 4px";
+    const fl=document.createElement("div");fl.style.width=goalPct(g)+"%";bar.appendChild(fl);d.appendChild(bar);
+    const meta=(txt,color)=>{const m=document.createElement("div");m.className="muted";m.style.fontSize="13px";if(color){m.style.color=color;m.style.fontWeight="600"}m.textContent=txt;d.appendChild(m)};
+    if(g.done)meta("Achieved "+fmtDate(g.doneDate),"var(--accent)");
+    else if(g.date){
+      const dl=Math.round((new Date(g.date+"T00:00:00")-new Date(today+"T00:00:00"))/86400000);
+      meta("Target date "+fmtDate(g.date)+" \u00b7 "+(dl>0?dl+" day"+(dl===1?"":"s")+" left":dl===0?"due today":"overdue"));
+    }
+    if((g.hist||[]).length){const lu=g.hist[g.hist.length-1];meta("Last update "+fmtDate(lu.d)+": "+fmtN(lu.v)+u)}
+    const b=document.createElement("div");b.className="row";b.style.marginTop="8px";
+    if(!g.done){
+      const inp=document.createElement("input");inp.type="number";inp.inputMode="decimal";inp.placeholder="New "+(g.unit||"value");inp.style.cssText="flex:1;min-width:90px";inp.setAttribute("aria-label","New progress value");
+      const lg=document.createElement("button");lg.style.cssText=sm;lg.textContent="Log progress";
+      lg.onclick=()=>{const v=parseFloat(inp.value);if(isNaN(v))return;g.cur=v;g.hist=g.hist||[];g.hist.push({d:today,v:v});if(goalReached(g)){g.done=true;g.doneDate=today}save();render()};
+      const mk=document.createElement("button");mk.style.cssText=sm;mk.textContent="Mark achieved";
+      mk.onclick=()=>{g.done=true;g.doneDate=today;save();render()};
+      b.append(inp,lg,mk);
+    }else{
+      const ro=document.createElement("button");ro.style.cssText=sm;ro.textContent="Reopen";
+      ro.onclick=()=>{g.done=false;g.doneDate="";save();render()};
+      b.appendChild(ro);
+    }
+    d.appendChild(b);L.appendChild(d);
+  });
+}
+let habRe=false;
+function openEditLog(l){
+  logCtx={edit:l,rows:[]};
+  $("logTitle").textContent="Edit logged workout";
+  $("logSub").textContent="Correct the details below. If this is the most recent log of an exercise, My exercises and your saved workouts are updated to match.";
+  $("logOk").textContent="Save changes";$("logOk").disabled=false;
+  const R=$("logRows");R.innerHTML="";
+  const fld=(lbl,val,type,fl)=>{
+    const w=document.createElement("label");w.className="muted";w.style.cssText="font-size:12px;flex:"+fl+";display:flex;flex-direction:column;gap:4px;min-width:0";
+    w.appendChild(document.createTextNode(lbl));
+    const i=document.createElement("input");i.value=val==null?"":val;
+    if(type){i.type=type;if(type==="number"){i.inputMode="numeric";i.min="0"}}
+    i.style.cssText="width:100%;font-size:15px";w.appendChild(i);return [w,i];
+  };
+  const top=document.createElement("div");top.className="row";
+  const nm=fld("Workout name",l.name,"","2"),dt=fld("Date",l.date,"date","1");
+  top.append(nm[0],dt[0]);R.appendChild(top);
+  logCtx.nameIn=nm[1];logCtx.dateIn=dt[1];
+  (l.items||[]).forEach(it=>{
+    const w=document.createElement("div");w.style.cssText="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)";
+    const t=document.createElement("div");t.style.fontWeight="600";t.textContent=it.name;
+    const r1=document.createElement("div");r1.className="row";
+    const s=fld("Sets",it.sets||"","number","1"),rp=fld("Reps",it.reps||"","number","1"),wt=fld("Weight",it.weight||"","","1");
+    r1.append(s[0],rp[0],wt[0]);
+    const r2=document.createElement("div");r2.className="row";
+    const nt=fld("Notes",it.note||"","","1");r2.appendChild(nt[0]);
+    w.append(t,r1,r2);R.appendChild(w);
+    logCtx.rows.push({it:it,s:s[1],r:rp[1],w:wt[1],n:nt[1]});
+  });
+  $("logView").style.display="flex";
 }
 function exDetail(e){
   const p=[];if(e.sets)p.push(e.sets+" sets");if(e.reps)p.push(e.reps+" reps");
@@ -969,7 +1111,7 @@ function renderFoods(){
   });
 }
 function render(){
-  showTab();renderHabits();renderWorkouts();updBar();renderPlans();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderSched();renderHist();renderProg();renderWk();
+  showTab();renderHabits();renderWorkouts();updBar();renderPlans();renderFoods();renderBreak();renderWater();renderMood();renderInsight();renderToggles();renderSched();renderHist();renderProg();renderGoals();renderWk();
   const today=key(new Date())===key(cur);
   $("dayLabel").textContent=today?"Today":cur.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
   $("next").disabled=today;
@@ -1045,6 +1187,17 @@ $("cmpView").addEventListener("click",e=>{if(e.target.id==="cmpView")$("cmpView"
 $("ppView").addEventListener("click",e=>{if(e.target.id==="ppView")$("ppView").style.display="none"});
 $("ppDel").onclick=async()=>{if(!openId)return;if(!ppArm){ppArm=true;$("ppDel").textContent="Tap again to confirm";return}ppArm=false;$("ppDel").textContent="Delete";const id=openId;await dbDel(id);pics=pics.filter(p=>p.id!==id);openId=null;$("ppView").style.display="none";renderPics()};
 $("progEx").onchange=()=>{progSel=$("progEx").value;renderProg()};
+$("gadd").onclick=()=>{
+  const n=$("gname").value.trim(),tg=parseFloat($("gtarget").value),st=$("gstart").value===""?0:parseFloat($("gstart").value);
+  if(!n){$("gMsg").textContent="Enter a goal name.";return}
+  if(isNaN(tg)||isNaN(st)){$("gMsg").textContent="Enter a target number, and a starting number if it isn't 0.";return}
+  if(tg===st){$("gMsg").textContent="The target can't be the same as the starting number.";return}
+  S.goals=S.goals||[];
+  S.goals.push({id:"g"+Date.now(),name:n,start:st,target:tg,cur:st,unit:$("gunit").value.trim(),date:$("gdate").value||"",hist:[],done:false});
+  ["gname","gstart","gtarget","gunit","gdate"].forEach(id=>{$(id).value=""});$("gMsg").textContent="";
+  save();render();
+};
+$("planToggle").onclick=()=>{S.plansOpen=(S.plansOpen===false);save();render()};
 $("bSave").onclick=()=>{
   const n=$("bname").value.trim();
   if(!bSel.size){$("bMsg").textContent="Tick at least one exercise above.";return}
@@ -1075,6 +1228,21 @@ $("bSchedOk").onclick=()=>{
 $("bClear").onclick=()=>{resetBuilder();$("bSchedRow").style.display="none";render()};
 $("logOk").onclick=()=>{
   if(!logCtx)return;
+  if(logCtx.edit){
+    const l=logCtx.edit;
+    l.name=logCtx.nameIn.value.trim()||l.name;
+    if(logCtx.dateIn.value)l.date=logCtx.dateIn.value;
+    logCtx.rows.forEach(r=>{const it=r.it;it.sets=parseInt(r.s.value,10)||0;it.reps=parseInt(r.r.value,10)||0;it.weight=r.w.value.trim();it.note=r.n.value.trim()});
+    l.edited=true;
+    const lk=x=>x.date+(x.t||"");
+    logCtx.rows.forEach(r=>{
+      const it=r.it,e=S.exercises.find(q=>q.id===it.exId);
+      if(!e)return;
+      const newer=S.wlog.some(o=>o!==l&&(o.items||[]).some(i2=>i2.exId===it.exId)&&lk(o)>lk(l));
+      if(!newer){e.sets=it.sets;e.reps=it.reps;e.weight=it.weight;e.note=it.note}
+    });
+    logCtx=null;$("logView").style.display="none";save();render();return;
+  }
   const items=[],changes=[];
   logCtx.rows.forEach(r=>{
     const e=r.e,ns=parseInt(r.s.value,10)||0,nr=parseInt(r.r.value,10)||0,nw=r.w.value.trim(),nn=r.n.value.trim();
@@ -1117,6 +1285,7 @@ $("addEx").onclick=()=>{const n=$("exname").value.trim();if(!n)return;if($("exca
 initWk();
 $("foodsToggle").onclick=()=>{S.foodsOpen=(S.foodsOpen===false);save();render()};
 $("entToggle").onclick=()=>{S.entOpen=(S.entOpen===false);save();render()};
+$("hReorder").onclick=()=>{habRe=!habRe;render()};
 $("hToggle").onclick=()=>{S.habitsOpen=(S.habitsOpen===false);save();render()};
 $("hprev").onclick=()=>{cur.setDate(cur.getDate()-1);render()};
 $("hnext").onclick=()=>{cur.setDate(cur.getDate()+1);render()};
