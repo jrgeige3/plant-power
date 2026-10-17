@@ -964,6 +964,7 @@ function renderPlans(){
     L.appendChild(d);
   });
 }
+const glOpen={};
 function goalPct(g){
   const span=g.target-g.start;
   if(!span)return g.done?100:0;
@@ -995,14 +996,41 @@ function renderGoals(){
       meta("Target date "+fmtDate(g.date)+" \u00b7 "+(dl>0?dl+" day"+(dl===1?"":"s")+" left":dl===0?"due today":"overdue"));
     }
     if((g.hist||[]).length){const lu=g.hist[g.hist.length-1];meta("Last update "+fmtDate(lu.d)+": "+fmtN(lu.v)+u)}
+    const hist=g.hist||[];
+    const lt=document.createElement("div");lt.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-top:8px";
+    const ll=document.createElement("span");ll.className="muted";ll.style.fontSize="13px";ll.textContent="Progress log"+(hist.length?" ("+hist.length+")":"");
+    const lopen=!!glOpen[g.id];
+    const lb=document.createElement("button");lb.textContent=lopen?"Hide":"Show";lb.style.cssText=sm;lb.setAttribute("aria-expanded",lopen);
+    lb.onclick=()=>{glOpen[g.id]=!lopen;renderGoals()};
+    lt.append(ll,lb);d.appendChild(lt);
+    if(lopen){
+      const lw=document.createElement("div");
+      const cdn=parseInt(g.id.slice(1),10),created=cdn?key(new Date(cdn)):"";
+      const sr=document.createElement("div");sr.className="muted";sr.style.cssText="font-size:13px;margin-top:6px";
+      sr.textContent="Started at "+fmtN(g.start)+u+(created?" \u00b7 "+fmtDate(created):"");lw.appendChild(sr);
+      if(!hist.length){const em=document.createElement("div");em.className="muted";em.style.cssText="font-size:13px;margin-top:6px";em.textContent="No progress logged yet.";lw.appendChild(em)}
+      hist.map((h,i)=>({h:h,i:i})).reverse().forEach(o=>{
+        const prev=o.i>0?hist[o.i-1].v:g.start,dl=o.h.v-prev,good=g.target<g.start?dl<0:dl>0;
+        const r=document.createElement("div");r.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid var(--border);margin-top:6px";
+        const a=document.createElement("div");a.style.cssText="flex:1;min-width:0;font-size:14px";
+        a.appendChild(document.createTextNode(fmtDate(o.h.d)+" \u00b7 "+fmtN(o.h.v)+u));
+        if(dl){const c=document.createElement("span");c.style.cssText="font-weight:600;margin-left:8px;color:"+(good?"var(--accent)":"var(--danger)");c.textContent=(dl>0?"+":"")+fmtN(dl);a.appendChild(c)}
+        if(o.h.n){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=o.h.n;a.appendChild(q)}
+        const xx=document.createElement("button");xx.className="x";xx.textContent="\u2715";xx.setAttribute("aria-label","Delete log entry");
+        xx.onclick=()=>{g.hist.splice(o.i,1);g.cur=g.hist.length?g.hist[g.hist.length-1].v:g.start;if(g.done&&!goalReached(g)){g.done=false;g.doneDate=""}save();render()};
+        r.append(a,xx);lw.appendChild(r);
+      });
+      d.appendChild(lw);
+    }
     const b=document.createElement("div");b.className="row";b.style.marginTop="8px";
     if(!g.done){
       const inp=document.createElement("input");inp.type="number";inp.inputMode="decimal";inp.placeholder="New "+(g.unit||"value");inp.style.cssText="flex:1;min-width:90px";inp.setAttribute("aria-label","New progress value");
+      const nin=document.createElement("input");nin.placeholder="Note (optional)";nin.style.cssText="flex:2;min-width:120px";nin.setAttribute("aria-label","Progress note");
       const lg=document.createElement("button");lg.style.cssText=sm;lg.textContent="Log progress";
-      lg.onclick=()=>{const v=parseFloat(inp.value);if(isNaN(v))return;g.cur=v;g.hist=g.hist||[];g.hist.push({d:today,v:v});if(goalReached(g)){g.done=true;g.doneDate=today}save();render()};
+      lg.onclick=()=>{const v=parseFloat(inp.value);if(isNaN(v))return;g.cur=v;g.hist=g.hist||[];g.hist.push({d:today,v:v,n:nin.value.trim()});if(goalReached(g)){g.done=true;g.doneDate=today}save();render()};
       const mk=document.createElement("button");mk.style.cssText=sm;mk.textContent="Mark achieved";
       mk.onclick=()=>{g.done=true;g.doneDate=today;save();render()};
-      b.append(inp,lg,mk);
+      b.append(inp,nin,lg,mk);
     }else{
       const ro=document.createElement("button");ro.style.cssText=sm;ro.textContent="Reopen";
       ro.onclick=()=>{g.done=false;g.doneDate="";save();render()};
