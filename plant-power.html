@@ -196,16 +196,13 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
     <div class="card" id="cardGoals">
       <strong>Goals</strong>
       <div class="muted">Set a target, then log your progress towards it.</div>
-      <div class="row"><input id="gname" placeholder="Goal" style="flex:1 1 100%"></div>
-      <div class="row">
-        <input id="gstart" type="number" inputmode="decimal" placeholder="Starting" style="flex:1">
-        <input id="gtarget" type="number" inputmode="decimal" placeholder="Target" style="flex:1">
-        <input id="gunit" placeholder="Unit (min, lb, mi)" style="flex:1">
-      </div>
-      <div class="muted" style="font-size:13px;margin-top:10px">Target date (optional)</div>
-      <div class="row" style="margin-top:4px">
-        <input id="gdate" type="date" aria-label="Target date (optional)" style="flex:1">
-        <button class="primary" id="gadd">Add goal</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <label class="muted" style="font-size:12px;display:flex;flex-direction:column;gap:4px;min-width:0;grid-column:span 2">Goal<input id="gname" placeholder="Goal" style="width:100%;height:40px;font-size:15px"></label>
+        <label class="muted" style="font-size:12px;display:flex;flex-direction:column;gap:4px;min-width:0">Starting<input id="gstart" type="number" inputmode="decimal" placeholder="0" style="width:100%;height:40px;font-size:15px"></label>
+        <label class="muted" style="font-size:12px;display:flex;flex-direction:column;gap:4px;min-width:0">Target<input id="gtarget" type="number" inputmode="decimal" placeholder="Target" style="width:100%;height:40px;font-size:15px"></label>
+        <label class="muted" style="font-size:12px;display:flex;flex-direction:column;gap:4px;min-width:0">Unit<input id="gunit" placeholder="min, lb, mi" style="width:100%;height:40px;font-size:15px"></label>
+        <label class="muted" style="font-size:12px;display:flex;flex-direction:column;gap:4px;min-width:0">Target date (optional)<input id="gdate" type="date" style="width:100%;height:40px;font-size:15px"></label>
+        <button class="primary" id="gadd" style="grid-column:span 2;height:40px">Add goal</button>
       </div>
       <div class="muted" id="gMsg" style="margin-top:8px;color:var(--danger)"></div>
       <div id="goalList"></div>
@@ -559,12 +556,13 @@ function renderHist(){
     const its=l.items||[],chs=its.filter(it=>it.chg);
     if(chs.length){
       chs.forEach(it=>{const p=document.createElement("div");p.style.cssText="margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--track);border-left:3px solid var(--accent);font-size:13px";p.textContent="Changed \u00b7 "+it.name+": "+it.chg;d.appendChild(p)});
-    }else if(l.chk){const p=document.createElement("div");p.className="muted";p.style.cssText="font-size:13px;margin-top:6px";p.textContent="No changes";d.appendChild(p)}
+    }else if(l.chk&&!its.some(it=>(it.edits||[]).length)){const p=document.createElement("div");p.className="muted";p.style.cssText="font-size:13px;margin-top:6px";p.textContent="No changes";d.appendChild(p)}
+    its.forEach(it=>(it.edits||[]).forEach(e=>{const p=document.createElement("div");p.style.cssText="margin-top:6px;padding:6px 10px;border-radius:8px;background:var(--track);border-left:3px solid var(--accent);font-size:13px";p.textContent="Edited \u00b7 "+it.name+": "+e.c;d.appendChild(p)}));
     if(open){
       const det=document.createElement("div");det.style.marginTop="8px";
       its.forEach(it=>{
         const r=document.createElement("div");r.style.cssText="font-size:14px;margin-top:4px";const dt=exDetail(it);r.textContent=it.name+(dt?" \u00b7 "+dt:"");
-        if(it.chg)r.style.fontWeight="600";
+        if(it.chg||(it.edits||[]).length)r.style.fontWeight="600";
         det.appendChild(r);
         if(it.note){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=it.note;det.appendChild(q)}
       });
@@ -779,15 +777,6 @@ function renderInsight(){
     };
     chipRow("Often in notes on good days (Good or Great)",topWords(n=>n.v>=4));
     chipRow("Often in notes on lower days (Poor or Bad)",topWords(n=>n.v&&n.v<=2));
-    const rh=document.createElement("div");rh.className="muted";rh.style.cssText="font-size:13px;margin-top:14px";rh.textContent="Recent notes";NO.appendChild(rh);
-    [...notes].sort((a,b)=>(b.k+(b.per==="pm"?"1":"0")).localeCompare(a.k+(a.per==="pm"?"1":"0"))).slice(0,6).forEach(n=>{
-      const r=document.createElement("div");r.className="item";r.style.cssText="align-items:flex-start;gap:10px;justify-content:flex-start";
-      if(n.v){const ic=document.createElement("span");ic.style.cssText="display:flex;flex:none";ic.innerHTML=moodIcon(n.v,22);r.appendChild(ic)}
-      const b=document.createElement("div");b.style.cssText="flex:1;min-width:0";
-      const t=document.createElement("div");t.textContent=n.note;
-      const m=document.createElement("div");m.className="muted";m.style.fontSize="12px";m.textContent=fmtDate(n.k)+" \u00b7 "+(n.per==="am"?"Morning":"Evening");
-      b.append(t,m);r.appendChild(b);NO.appendChild(r);
-    });
   }
   const AP=$("inAmPm");AP.innerHTML="";
   const ams=ks.map(k=>(S.mood[k]||{}).am).filter(x=>x&&x.v).map(x=>x.v);
@@ -965,30 +954,74 @@ function renderPlans(){
   });
 }
 const glOpen={};
+let goalEdit=null,msAdd=null;
 function goalPct(g){
   const span=g.target-g.start;
   if(!span)return g.done?100:0;
   return Math.max(0,Math.min(100,(g.cur-g.start)/span*100));
 }
 const goalReached=g=>g.target<g.start?g.cur<=g.target:g.cur>=g.target;
+const msReached=(g,v)=>g.target<g.start?g.cur<=v:g.cur>=v;
 const fmtN=v=>String(Math.round(v*100)/100);
+function goalEditForm(g,sm,today){
+  const wrap=document.createElement("div");
+  const grid=document.createElement("div");grid.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px";
+  const mk=(lbl,val,type,span)=>{
+    const w=document.createElement("label");w.className="muted";w.style.cssText="font-size:12px;display:flex;flex-direction:column;gap:4px;min-width:0"+(span?";grid-column:span 2":"");
+    w.appendChild(document.createTextNode(lbl));
+    const i=document.createElement("input");if(type){i.type=type;if(type==="number")i.inputMode="decimal"}
+    i.value=val==null?"":String(val);i.style.cssText="width:100%;height:40px;font-size:15px";w.appendChild(i);return [w,i];
+  };
+  const n=mk("Goal",g.name,"",true),st=mk("Starting",g.start,"number"),tg=mk("Target",g.target,"number"),un=mk("Unit",g.unit||"",""),dt=mk("Target date (optional)",g.date||"","date");
+  grid.append(n[0],st[0],tg[0],un[0],dt[0]);wrap.appendChild(grid);
+  const msg=document.createElement("div");msg.className="muted";msg.style.cssText="font-size:13px;margin-top:8px;color:var(--danger)";wrap.appendChild(msg);
+  const row=document.createElement("div");row.className="row";
+  const sv=document.createElement("button");sv.className="primary";sv.style.cssText=sm;sv.textContent="Save changes";
+  const cn=document.createElement("button");cn.style.cssText=sm;cn.textContent="Cancel";
+  sv.onclick=()=>{
+    const nm=n[1].value.trim(),ns=st[1].value===""?0:parseFloat(st[1].value),nt=parseFloat(tg[1].value);
+    if(!nm){msg.textContent="Enter a goal name.";return}
+    if(isNaN(nt)||isNaN(ns)){msg.textContent="Enter a target number and a starting number.";return}
+    if(nt===ns){msg.textContent="The target can't be the same as the starting number.";return}
+    g.name=nm;g.start=ns;g.target=nt;g.unit=un[1].value.trim();g.date=dt[1].value||"";
+    if(!(g.hist||[]).length)g.cur=ns;
+    if(!g.manual){
+      if(!g.done&&goalReached(g)){g.done=true;g.doneDate=today}
+      else if(g.done&&!goalReached(g)){g.done=false;g.doneDate=""}
+    }
+    goalEdit=null;save();render();
+  };
+  cn.onclick=()=>{goalEdit=null;render()};
+  row.append(sv,cn);wrap.appendChild(row);
+  return wrap;
+}
 function renderGoals(){
   S.goals=S.goals||[];
   const L=$("goalList");L.innerHTML="";
   if(!S.goals.length){L.innerHTML='<div class="muted" style="margin-top:8px">No goals yet. Add one above.</div>';return}
   const sm="padding:4px 10px;font-size:13px",today=key(new Date());
   [...S.goals].sort((a,b)=>(a.done?1:0)-(b.done?1:0)).forEach(g=>{
+    g.ms=g.ms||[];
     const u=g.unit?" "+g.unit:"";
     const d=document.createElement("div");d.className="item";d.style.display="block";
+    if(goalEdit===g.id){d.appendChild(goalEditForm(g,sm,today));L.appendChild(d);return}
     const hr=document.createElement("div");hr.style.cssText="display:flex;justify-content:space-between;align-items:flex-start;gap:8px";
     const t=document.createElement("div");t.style.cssText="font-weight:600;flex:1;min-width:0";t.textContent=(g.done?"\u2713 ":"")+g.name;
+    const hb=document.createElement("div");hb.style.whiteSpace="nowrap";
+    const eb=document.createElement("button");eb.style.cssText=sm+";margin-right:4px";eb.textContent="Edit";
+    eb.onclick=()=>{goalEdit=g.id;msAdd=null;render()};
     const x=document.createElement("button");x.className="x";x.textContent="\u2715";x.setAttribute("aria-label","Delete goal");
     x.onclick=()=>{S.goals=S.goals.filter(q=>q.id!==g.id);save();render()};
-    hr.append(t,x);d.appendChild(hr);
+    hb.append(eb,x);hr.append(t,hb);d.appendChild(hr);
     const st=document.createElement("div");st.style.cssText="font-size:14px;margin-top:4px";
     st.textContent=fmtN(g.cur)+" / "+fmtN(g.target)+u+" \u00b7 "+Math.round(goalPct(g))+"%";d.appendChild(st);
-    const bar=document.createElement("div");bar.className="bar";bar.style.margin="8px 0 4px";
-    const fl=document.createElement("div");fl.style.width=goalPct(g)+"%";bar.appendChild(fl);d.appendChild(bar);
+    const bar=document.createElement("div");bar.className="bar";bar.style.margin="8px 0 4px";bar.style.position="relative";
+    const fl=document.createElement("div");fl.style.width=goalPct(g)+"%";bar.appendChild(fl);
+    g.ms.forEach(m=>{
+      const pc=(m.v-g.start)/(g.target-g.start)*100;
+      if(pc>0&&pc<100){const tk=document.createElement("div");tk.style.cssText="position:absolute;top:0;bottom:0;height:auto;left:calc("+pc+"% - 1px);width:2px;background:var(--card);border-radius:0";bar.appendChild(tk)}
+    });
+    d.appendChild(bar);
     const meta=(txt,color)=>{const m=document.createElement("div");m.className="muted";m.style.fontSize="13px";if(color){m.style.color=color;m.style.fontWeight="600"}m.textContent=txt;d.appendChild(m)};
     if(g.done)meta("Achieved "+fmtDate(g.doneDate),"var(--accent)");
     else if(g.date){
@@ -996,6 +1029,38 @@ function renderGoals(){
       meta("Target date "+fmtDate(g.date)+" \u00b7 "+(dl>0?dl+" day"+(dl===1?"":"s")+" left":dl===0?"due today":"overdue"));
     }
     if((g.hist||[]).length){const lu=g.hist[g.hist.length-1];meta("Last update "+fmtDate(lu.d)+": "+fmtN(lu.v)+u)}
+    // milestones
+    const mdone=g.ms.filter(m=>m.done).length;
+    const mh=document.createElement("div");mh.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-top:8px";
+    const ml=document.createElement("span");ml.className="muted";ml.style.fontSize="13px";ml.textContent="Milestones"+(g.ms.length?" ("+mdone+"/"+g.ms.length+")":"");
+    const mb=document.createElement("button");mb.style.cssText=sm;mb.textContent=msAdd===g.id?"Cancel":"+ Add";
+    mb.onclick=()=>{msAdd=msAdd===g.id?null:g.id;render()};
+    mh.append(ml,mb);d.appendChild(mh);
+    [...g.ms].sort((a,b)=>Math.abs(a.v-g.start)-Math.abs(b.v-g.start)).forEach(m=>{
+      const r=document.createElement("div");r.style.cssText="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;margin-top:4px";
+      const tx=document.createElement("div");tx.style.cssText="flex:1;min-width:0"+(m.done?";color:var(--accent)":"");
+      tx.textContent=(m.done?"\u2713 ":"\u25cb ")+(m.label?m.label+" \u00b7 ":"")+fmtN(m.v)+u+(m.done&&m.doneDate?" \u00b7 "+fmtDate(m.doneDate):"");
+      const rm=document.createElement("button");rm.className="x";rm.textContent="\u2715";rm.setAttribute("aria-label","Delete milestone");
+      rm.onclick=()=>{g.ms=g.ms.filter(q=>q.id!==m.id);save();render()};
+      r.append(tx,rm);d.appendChild(r);
+    });
+    if(msAdd===g.id){
+      const f=document.createElement("div");f.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px";
+      const vi=document.createElement("input");vi.type="number";vi.inputMode="decimal";vi.placeholder="Milestone"+(g.unit?" ("+g.unit+")":"");vi.style.cssText="width:100%;height:36px;font-size:15px";vi.setAttribute("aria-label","Milestone value");
+      const li=document.createElement("input");li.placeholder="Label (optional)";li.style.cssText="width:100%;height:36px;font-size:15px";li.setAttribute("aria-label","Milestone label");
+      const ok=document.createElement("button");ok.style.cssText="grid-column:span 2;height:36px;font-size:14px";ok.textContent="Add milestone";
+      const mm=document.createElement("div");mm.className="muted";mm.style.cssText="grid-column:span 2;font-size:13px;color:var(--danger)";
+      ok.onclick=()=>{
+        const v=parseFloat(vi.value),span=g.target-g.start;
+        if(isNaN(v)){mm.textContent="Enter a milestone number.";return}
+        if(!((v-g.start)*span>0&&Math.abs(v-g.start)<Math.abs(span))){mm.textContent="A milestone must be between "+fmtN(g.start)+" and "+fmtN(g.target)+".";return}
+        const m={id:"m"+Date.now(),v:v,label:li.value.trim(),done:false,doneDate:""};
+        if(msReached(g,v)){m.done=true;m.doneDate=today}
+        g.ms.push(m);msAdd=null;save();render();
+      };
+      f.append(vi,li,mm,ok);d.appendChild(f);
+    }
+    // progress log
     const hist=g.hist||[];
     const lt=document.createElement("div");lt.style.cssText="display:flex;align-items:center;justify-content:space-between;margin-top:8px";
     const ll=document.createElement("span");ll.className="muted";ll.style.fontSize="13px";ll.textContent="Progress log"+(hist.length?" ("+hist.length+")":"");
@@ -1017,23 +1082,30 @@ function renderGoals(){
         if(dl){const c=document.createElement("span");c.style.cssText="font-weight:600;margin-left:8px;color:"+(good?"var(--accent)":"var(--danger)");c.textContent=(dl>0?"+":"")+fmtN(dl);a.appendChild(c)}
         if(o.h.n){const q=document.createElement("div");q.className="muted";q.style.fontSize="13px";q.textContent=o.h.n;a.appendChild(q)}
         const xx=document.createElement("button");xx.className="x";xx.textContent="\u2715";xx.setAttribute("aria-label","Delete log entry");
-        xx.onclick=()=>{g.hist.splice(o.i,1);g.cur=g.hist.length?g.hist[g.hist.length-1].v:g.start;if(g.done&&!goalReached(g)){g.done=false;g.doneDate=""}save();render()};
+        xx.onclick=()=>{g.hist.splice(o.i,1);g.cur=g.hist.length?g.hist[g.hist.length-1].v:g.start;if(g.done&&!g.manual&&!goalReached(g)){g.done=false;g.doneDate=""}save();render()};
         r.append(a,xx);lw.appendChild(r);
       });
       d.appendChild(lw);
     }
-    const b=document.createElement("div");b.className="row";b.style.marginTop="8px";
+    // actions
+    const b=document.createElement("div");b.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px";
     if(!g.done){
-      const inp=document.createElement("input");inp.type="number";inp.inputMode="decimal";inp.placeholder="New "+(g.unit||"value");inp.style.cssText="flex:1;min-width:90px";inp.setAttribute("aria-label","New progress value");
-      const nin=document.createElement("input");nin.placeholder="Note (optional)";nin.style.cssText="flex:2;min-width:120px";nin.setAttribute("aria-label","Progress note");
-      const lg=document.createElement("button");lg.style.cssText=sm;lg.textContent="Log progress";
-      lg.onclick=()=>{const v=parseFloat(inp.value);if(isNaN(v))return;g.cur=v;g.hist=g.hist||[];g.hist.push({d:today,v:v,n:nin.value.trim()});if(goalReached(g)){g.done=true;g.doneDate=today}save();render()};
-      const mk=document.createElement("button");mk.style.cssText=sm;mk.textContent="Mark achieved";
-      mk.onclick=()=>{g.done=true;g.doneDate=today;save();render()};
+      const inp=document.createElement("input");inp.type="number";inp.inputMode="decimal";inp.placeholder="New "+(g.unit||"value");inp.style.cssText="width:100%;height:36px;font-size:15px";inp.setAttribute("aria-label","New progress value");
+      const nin=document.createElement("input");nin.placeholder="Note (optional)";nin.style.cssText="width:100%;height:36px;font-size:15px";nin.setAttribute("aria-label","Progress note");
+      const lg=document.createElement("button");lg.style.cssText="height:36px;font-size:14px";lg.textContent="Log progress";
+      lg.onclick=()=>{
+        const v=parseFloat(inp.value);if(isNaN(v))return;
+        g.cur=v;g.hist=g.hist||[];g.hist.push({d:today,v:v,n:nin.value.trim()});
+        g.ms.forEach(m=>{if(!m.done&&msReached(g,m.v)){m.done=true;m.doneDate=today}});
+        if(goalReached(g)){g.done=true;g.manual=false;g.doneDate=today}
+        save();render();
+      };
+      const mk=document.createElement("button");mk.style.cssText="height:36px;font-size:14px";mk.textContent="Mark achieved";
+      mk.onclick=()=>{g.done=true;g.manual=true;g.doneDate=today;save();render()};
       b.append(inp,nin,lg,mk);
     }else{
-      const ro=document.createElement("button");ro.style.cssText=sm;ro.textContent="Reopen";
-      ro.onclick=()=>{g.done=false;g.doneDate="";save();render()};
+      const ro=document.createElement("button");ro.style.cssText="grid-column:span 2;height:36px;font-size:14px";ro.textContent="Reopen";
+      ro.onclick=()=>{g.done=false;g.manual=false;g.doneDate="";save();render()};
       b.appendChild(ro);
     }
     d.appendChild(b);L.appendChild(d);
@@ -1221,7 +1293,7 @@ $("gadd").onclick=()=>{
   if(isNaN(tg)||isNaN(st)){$("gMsg").textContent="Enter a target number, and a starting number if it isn't 0.";return}
   if(tg===st){$("gMsg").textContent="The target can't be the same as the starting number.";return}
   S.goals=S.goals||[];
-  S.goals.push({id:"g"+Date.now(),name:n,start:st,target:tg,cur:st,unit:$("gunit").value.trim(),date:$("gdate").value||"",hist:[],done:false});
+  S.goals.push({id:"g"+Date.now(),name:n,start:st,target:tg,cur:st,unit:$("gunit").value.trim(),date:$("gdate").value||"",hist:[],ms:[],done:false});
   ["gname","gstart","gtarget","gunit","gdate"].forEach(id=>{$(id).value=""});$("gMsg").textContent="";
   save();render();
 };
@@ -1260,7 +1332,15 @@ $("logOk").onclick=()=>{
     const l=logCtx.edit;
     l.name=logCtx.nameIn.value.trim()||l.name;
     if(logCtx.dateIn.value)l.date=logCtx.dateIn.value;
-    logCtx.rows.forEach(r=>{const it=r.it;it.sets=parseInt(r.s.value,10)||0;it.reps=parseInt(r.r.value,10)||0;it.weight=r.w.value.trim();it.note=r.n.value.trim()});
+    logCtx.rows.forEach(r=>{
+      const it=r.it,ns=parseInt(r.s.value,10)||0,nr=parseInt(r.r.value,10)||0,nw=r.w.value.trim(),nn=r.n.value.trim(),parts=[];
+      if((it.weight||"")!==nw)parts.push("weight "+(it.weight||"none")+" \u2192 "+(nw||"none"));
+      if((it.sets||0)!==ns)parts.push("sets "+(it.sets||0)+" \u2192 "+ns);
+      if((it.reps||0)!==nr)parts.push("reps "+(it.reps||0)+" \u2192 "+nr);
+      if((it.note||"")!==nn)parts.push("notes");
+      if(parts.length){it.edits=it.edits||[];it.edits.push({d:key(new Date()),c:parts.join(", ")})}
+      it.sets=ns;it.reps=nr;it.weight=nw;it.note=nn;
+    });
     l.edited=true;
     const lk=x=>x.date+(x.t||"");
     logCtx.rows.forEach(r=>{
