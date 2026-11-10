@@ -10,6 +10,11 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141816;--card:#1e2421;--text:#eef1ee;--muted:#9aa39d;--accent:#5fc796;--track:#2c3430;--border:#2f3833;--danger:#e8806e;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#141816;--card:#1e2421;--text:#eef1ee;--muted:#9aa39d;--accent:#5fc796;--track:#2c3430;--border:#2f3833;--danger:#e8806e;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
+:root{--warn:#c8630a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--warn:#f2a65a}}
+:root[data-theme="dark"]{--warn:#f2a65a}
+#cardGoals input[type="date"]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-width:0;height:40px;min-height:40px;margin:0;text-align:left;line-height:normal}
+#cardGoals input[type="date"]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
 main{max-width:480px;margin:0 auto;padding:20px 16px 40px}
@@ -287,6 +292,11 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
       <div id="inNotes"></div>
     </div>
     <div class="card">
+      <strong>Why goals are being missed</strong>
+      <div class="muted" style="font-size:13px">Patterns in your own data that may explain missed goals. They show associations, not proof of cause.</div>
+      <div id="inWhy"></div>
+    </div>
+    <div class="card">
       <strong>Morning vs evening</strong>
       <div id="inAmPm"></div>
     </div>
@@ -363,7 +373,8 @@ function renderHabits(){
   $("hTitle").textContent="My habits"+(hopen||!S.habits.length?"":" ("+S.habits.length+")");
   const k=key(cur),L=$("habitList");L.innerHTML="";
   const done=S.habits.filter(h=>(S.hlog[h.id]||{})[k]).length;
-  $("hSummary").textContent=S.habits.length?done+" of "+S.habits.length+" done":"";
+  const need=S.habits.filter(h=>habitStatus(h).c==="bad").length;
+  $("hSummary").textContent=S.habits.length?done+" of "+S.habits.length+" done"+(need?" \u00b7 "+need+" need"+(need===1?"s":"")+" attention":""):"";
   if(!S.habits.length)L.innerHTML='<div class="muted" style="margin-top:8px">No habits yet. Add one below.</div>';
   S.habits.forEach((h,i)=>{
     const d=document.createElement("div");d.className="item";
@@ -377,7 +388,10 @@ function renderHabits(){
     const pw=h.perWeek||0;
     if(pw){const wk=weekStart(cur),cnt=countWeek(h.id,wk),ws=weekStreak(h.id,pw);sub.textContent=cnt+"/"+pw+(key(wk)===key(weekStart(new Date()))?" this week":" that week")+(ws?" \u00b7 "+ws+"-week streak":"")}
     else{const n=streak(h.id);sub.textContent=n?"Daily \u00b7 "+n+"-day streak":"Daily"}
-    tx.append(s,sub);lb.append(c,tx);
+    tx.append(s,sub);
+    const hs=habitStatus(h);
+    if(hs.t){const q=document.createElement("div");q.style.cssText="font-size:13px;margin-top:2px"+(hs.c==="bad"?";color:var(--warn);font-weight:600":hs.c==="ok"?";color:var(--accent)":"");if(hs.c==="muted")q.className="muted";q.textContent=hs.t;tx.appendChild(q)}
+    lb.append(c,tx);
     const sel=document.createElement("select");sel.style.cssText="font-size:13px;padding:6px";sel.setAttribute("aria-label","Goal");
     FREQ.forEach(([t,v])=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o)});
     sel.value=pw;sel.onchange=()=>{h.perWeek=parseInt(sel.value,10);save();render()};
@@ -778,6 +792,7 @@ function renderInsight(){
     chipRow("Often in notes on good days (Good or Great)",topWords(n=>n.v>=4));
     chipRow("Often in notes on lower days (Poor or Bad)",topWords(n=>n.v&&n.v<=2));
   }
+  renderWhy(ks);
   const AP=$("inAmPm");AP.innerHTML="";
   const ams=ks.map(k=>(S.mood[k]||{}).am).filter(x=>x&&x.v).map(x=>x.v);
   const pms=ks.map(k=>(S.mood[k]||{}).pm).filter(x=>x&&x.v).map(x=>x.v);
@@ -1111,6 +1126,24 @@ function renderGoals(){
     d.appendChild(b);L.appendChild(d);
   });
 }
+function habitStatus(h){
+  const hl=S.hlog[h.id]||{},today=key(new Date()),cdn=parseInt(h.id.slice(1),10),created=cdn?key(new Date(cdn)):today;
+  const dbt=(a,b)=>Math.round((new Date(b+"T00:00:00")-new Date(a+"T00:00:00"))/86400000);
+  const pw=h.perWeek||0;
+  if(!pw){
+    if(hl[today])return {t:"Completed today",c:"ok"};
+    const ds=Object.keys(hl).filter(k=>hl[k]&&k<=today).sort();
+    if(!ds.length){const n=dbt(created,today);return n>=1?{t:"Not completed in "+n+" day"+(n===1?"":"s")+" since you added it",c:n>=2?"bad":"muted"}:{t:"Not done yet today",c:"muted"}}
+    const n=dbt(ds[ds.length-1],today);
+    return n<=1?{t:"Last completed yesterday",c:"muted"}:{t:"Not completed in "+n+" days",c:"bad"};
+  }
+  const ws=weekStart(new Date()),cnt=countWeek(h.id,ws);
+  if(cnt>=pw)return {t:"Goal met this week",c:"ok"};
+  let m=0;const w=new Date(ws);w.setDate(w.getDate()-7);
+  while(key(w)>=created&&m<520){if(countWeek(h.id,w)>=pw)break;m++;w.setDate(w.getDate()-7)}
+  if(m===0)return {t:"",c:"muted"};
+  return {t:(pw===1?"Not completed in "+m+" week"+(m===1?"":"s"):"Goal not met in "+m+" week"+(m===1?"":"s")+" in a row")+" \u00b7 "+cnt+" of "+pw+" this week",c:"bad"};
+}
 let habRe=false;
 function openEditLog(l){
   logCtx={edit:l,rows:[]};
@@ -1141,6 +1174,141 @@ function openEditLog(l){
     logCtx.rows.push({it:it,s:s[1],r:rp[1],w:wt[1],n:nt[1]});
   });
   $("logView").style.display="flex";
+}
+function renderWhy(ks){
+  const W=$("inWhy");W.innerHTML="";
+  const today=key(new Date());
+  const DN=["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"];
+  const pd=k=>{const p=k.split("-").map(Number);return new Date(p[0],p[1]-1,p[2])};
+  const wd=k=>pd(k).getDay();
+  const dbt=(a,b)=>Math.round((pd(b)-pd(a))/86400000);
+  const hm=t=>{const p=String(t||"").split(":").map(Number);return p.length===2&&!isNaN(p[0])&&!isNaN(p[1])?p[0]*60+p[1]:null};
+  const r1=v=>Math.round(v*10)/10;
+  let shown=0;
+  const block=(title,head,reasons,ok)=>{
+    shown++;
+    const d=document.createElement("div");d.className="item";d.style.display="block";
+    const t=document.createElement("div");t.style.fontWeight="600";t.textContent=title;
+    const h=document.createElement("div");h.style.cssText="font-size:14px;margin-top:2px"+(ok?";color:var(--accent)":"");h.textContent=head;
+    d.append(t,h);
+    reasons.forEach(r=>{const q=document.createElement("div");q.style.cssText="font-size:13px;margin-top:6px;padding-left:10px;border-left:3px solid var(--border)";q.textContent=r;d.appendChild(q)});
+    W.appendChild(d);
+  };
+  const cluster=(days,miss)=>{
+    const rate=miss.length/days.length;
+    return [0,1,2,3,4,5,6].map(i=>({i:i,m:miss.filter(k=>wd(k)===i).length,n:days.filter(k=>wd(k)===i).length}))
+      .filter(x=>x.n>=2&&x.m/x.n>=0.6&&x.m/x.n>=rate+0.2).sort((a,b)=>b.m/b.n-a.m/a.n).slice(0,2).map(x=>DN[x.i]+" ("+x.m+" of "+x.n+")");
+  };
+  const totals=(title,days,goal,ents,fmt,extra)=>{
+    if(days.length<5){block(title,"Not enough logged days yet ("+days.length+" of 5 needed).",[],false);return}
+    const tot=k=>ents(k).reduce((a,e)=>a+e.a,0);
+    const hit=days.filter(k=>tot(k)>=goal),miss=days.filter(k=>tot(k)<goal);
+    if(!miss.length){block(title,"On track: you hit your goal on all "+days.length+" logged days.",[],true);return}
+    const rate=Math.round(hit.length/days.length*100);
+    const head="Hit on "+hit.length+" of "+days.length+" logged days ("+rate+"%). Missed days averaged "+fmt(mean(miss.map(k=>goal-tot(k))))+" short of your goal.";
+    const reasons=[];
+    const cl=cluster(days,miss);
+    if(cl.length)reasons.push("Misses cluster on "+cl.join(" and ")+".");
+    const early=k=>{const es=ents(k).filter(e=>hm(e.t)!=null),T=es.reduce((a,e)=>a+e.a,0);return T>0?100*es.filter(e=>hm(e.t)<840).reduce((a,e)=>a+e.a,0)/T:null};
+    const ea=a=>{const v=a.map(early).filter(x=>x!=null);return v.length>=2?mean(v):null};
+    const eh=ea(hit),em=ea(miss);
+    if(eh!=null&&em!=null&&eh-em>=15)reasons.push("On missed days only "+Math.round(em)+"% was logged before 2 PM, vs "+Math.round(eh)+"% on days you hit your goal, so the day tends to start slowly.");
+    else if(eh!=null&&em!=null&&em-eh>=15)reasons.push("On missed days "+Math.round(em)+"% was logged before 2 PM vs "+Math.round(eh)+"% on hit days, so the afternoon and evening tend to fall short.");
+    const cn=a=>mean(a.map(k=>ents(k).length));
+    if(hit.length>=2&&miss.length>=2&&cn(hit)-cn(miss)>=1)reasons.push("Missed days had fewer entries ("+r1(cn(miss))+" on average vs "+r1(cn(hit))+"), so you're logging fewer times across the day.");
+    if(extra)extra(hit,miss,reasons);
+    if(!reasons.length)reasons.push("No clear pattern yet in days of the week, timing, or number of entries. More logged days will help.");
+    block(title,head,reasons,rate>=80);
+  };
+  // Protein
+  totals("Protein goal",ks.filter(k=>protG(k)>0),S.goal,k=>(S.days[k]||[]).map(e=>({a:e.g,t:e.t})),v=>Math.round(v)+" g",(hit,miss,reasons)=>{
+    if(hit.length<2||miss.length<2)return;
+    const catAvg=(a,c)=>mean(a.map(k=>(S.days[k]||[]).filter(e=>e.cat===c).reduce((s,e)=>s+e.g,0)));
+    const gaps=["Breakfast","Lunch","Dinner","Snack"].map(c=>({c:c,h:catAvg(hit,c),m:catAvg(miss,c)})).map(x=>({c:x.c,h:x.h,m:x.m,d:x.h-x.m})).sort((a,b)=>b.d-a.d);
+    if(gaps[0]&&gaps[0].d>=8)reasons.push("The biggest gap is "+gaps[0].c.toLowerCase()+": "+Math.round(gaps[0].m)+" g on missed days vs "+Math.round(gaps[0].h)+" g on days you hit your goal.");
+    const none=(a,c)=>100*a.filter(k=>!(S.days[k]||[]).some(e=>e.cat===c)).length/a.length;
+    const nb=none(miss,"Breakfast"),nbh=none(hit,"Breakfast");
+    if(nb-nbh>=25)reasons.push("On "+Math.round(nb)+"% of missed days you logged no breakfast protein (vs "+Math.round(nbh)+"% on hit days).");
+  });
+  // Water
+  totals("Water goal",ks.filter(k=>waterMl(k)>0),S.water.goal,k=>(S.water.days[k]||[]).map(e=>({a:e.ml,t:e.t})),v=>fmtU(v)+" "+uLabel());
+  // Daily habits
+  S.habits.filter(h=>!h.perWeek).forEach(h=>{
+    const hl=S.hlog[h.id]||{},cd=key(new Date(parseInt(h.id.slice(1),10)||0));
+    const days=ks.filter(k=>(k>=cd&&k<today)||hl[k]);
+    const title="Habit: "+h.name;
+    if(days.length<5){block(title,"Not enough days yet ("+days.length+" of 5 needed).",[],false);return}
+    const done=days.filter(k=>hl[k]),miss=days.filter(k=>!hl[k]);
+    if(!miss.length){block(title,"On track: done on all "+days.length+" days.",[],true);return}
+    const rate=Math.round(done.length/days.length*100);
+    const reasons=[];
+    const cl=cluster(days,miss);
+    if(cl.length)reasons.push("Misses cluster on "+cl.join(" and ")+".");
+    if(days.length>=14){
+      const last=days.slice(-7),prev=days.slice(-14,-7);
+      const pr=a=>100*a.filter(k=>hl[k]).length/a.length;
+      if(pr(prev)-pr(last)>=25)reasons.push("Completion dropped from "+Math.round(pr(prev))+"% to "+Math.round(pr(last))+"% in the last week.");
+    }
+    let run=0,best=0,bestEnd="";days.forEach(k=>{if(!hl[k]){run++;if(run>best){best=run;bestEnd=k}}else run=0});
+    if(best>=3)reasons.push("Longest run of misses: "+best+" days in a row, ending "+fmtDate(bestEnd)+".");
+    const md=a=>{const v=a.map(moodDay).filter(x=>x!=null);return v.length>=3?mean(v):null};
+    const mdn=md(done),mms=md(miss);
+    if(mdn!=null&&mms!=null&&mdn-mms>=0.5)reasons.push("Your mood averaged "+r1(mms)+" on days you skipped it vs "+r1(mdn)+" on days you did it.");
+    if(!reasons.length)reasons.push("No clear pattern yet in days of the week or timing. More days will help.");
+    block(title,"Done on "+done.length+" of "+days.length+" days ("+rate+"%).",reasons,rate>=80);
+  });
+  // Weekly habits
+  S.habits.filter(h=>h.perWeek).forEach(h=>{
+    const hl=S.hlog[h.id]||{},cd=key(new Date(parseInt(h.id.slice(1),10)||0)),pw=h.perWeek,title="Habit: "+h.name;
+    const first=ks[0],weeks=[];
+    let ws=weekStart(new Date());ws.setDate(ws.getDate()-7);
+    while(key(ws)>=first&&key(ws)>=cd&&weeks.length<13){weeks.push(new Date(ws));ws.setDate(ws.getDate()-7)}
+    if(weeks.length<3){block(title,"Not enough completed weeks yet ("+weeks.length+" of 3 needed).",[],false);return}
+    const cnts=weeks.map(w=>countWeek(h.id,w)),hitW=cnts.filter(x=>x>=pw).length,avg=mean(cnts);
+    if(hitW===weeks.length){block(title,"On track: you hit "+pw+"x per week in all "+weeks.length+" completed weeks.",[],true);return}
+    const reasons=[];
+    if(avg<pw)reasons.push("You average "+r1(avg)+" check-ins a week against a target of "+pw+", about "+r1(pw-avg)+" short.");
+    const dc=[0,0,0,0,0,0,0];
+    weeks.forEach(w=>{for(let i=0;i<7;i++){const d=new Date(w);d.setDate(d.getDate()+i);if(hl[key(d)])dc[i]++}});
+    const top=dc.map((n,i)=>({n:n,i:i})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n).slice(0,2);
+    if(top.length)reasons.push("Most check-ins land on "+top.map(x=>DN[x.i]).join(" and ")+".");
+    const zero=dc.map((n,i)=>({n:n,i:i})).filter(x=>x.n===0);
+    if(zero.length&&zero.length<7)reasons.push("You never checked in on "+zero.map(x=>DN[x.i]).join(", ")+" in these "+weeks.length+" weeks, which leaves fewer days to fit it in.");
+    if(!reasons.length)reasons.push("No clear pattern yet in which days you check in.");
+    block(title,"Hit "+pw+"x per week in "+hitW+" of "+weeks.length+" completed weeks.",reasons,hitW/weeks.length>=0.8);
+  });
+  // Fitness goals
+  (S.goals||[]).filter(g=>!g.done).forEach(g=>{
+    const u=g.unit?" "+g.unit:"",hist=g.hist||[],title="Goal: "+g.name;
+    const cdn=parseInt(g.id.slice(1),10)||Date.now(),ck=key(new Date(cdn));
+    const since=Math.max(1,dbt(ck,today)),pct=Math.round(goalPct(g));
+    const head=fmtN(g.cur)+" of "+fmtN(g.target)+u+" ("+pct+"%), "+since+" day"+(since===1?"":"s")+" since you set it.";
+    const reasons=[];
+    if(!hist.length){
+      reasons.push("No progress has been logged yet. Log an update to see your pace.");
+      block(title,head,reasons,false);return;
+    }
+    const lastD=hist[hist.length-1].d,idle=dbt(lastD,today);
+    if(idle>=14)reasons.push("Your last update was "+idle+" days ago, so progress may have stalled or isn't being logged.");
+    const weeksEl=Math.max(1/7,dbt(ck,lastD)/7),rate=(g.cur-g.start)/weeksEl,need=g.target-g.cur;
+    let ok=false;
+    if(rate*(g.target-g.start)>0){
+      const wl=need/rate,proj=new Date(pd(lastD).getTime()+wl*7*86400000),pk=key(proj);
+      if(g.date){
+        const left=dbt(today,g.date)/7;
+        if(left<=0)reasons.push("The target date has passed with "+fmtN(Math.abs(need))+u+" still to go.");
+        else if(pk>g.date)reasons.push("At your pace of "+fmtN(Math.abs(rate))+u+" a week you'd finish around "+fmtDate(pk)+", after your target date of "+fmtDate(g.date)+". You'd need about "+fmtN(Math.abs(need)/left)+u+" a week.");
+        else{ok=true;reasons.push("At your pace of "+fmtN(Math.abs(rate))+u+" a week you'd finish around "+fmtDate(pk)+", before your target date.")}
+      }else reasons.push("At your pace of "+fmtN(Math.abs(rate))+u+" a week you'd reach it in about "+Math.max(1,Math.ceil(wl))+" week"+(Math.ceil(wl)===1?"":"s")+".");
+    }else reasons.push("There's no net progress toward the target yet ("+fmtN(g.start)+" to "+fmtN(g.cur)+u+").");
+    const nm=(g.ms||[]).filter(m=>!m.done).sort((a,b)=>Math.abs(a.v-g.start)-Math.abs(b.v-g.start))[0];
+    if(nm)reasons.push("Next milestone: "+(nm.label?nm.label+" at ":"")+fmtN(nm.v)+u+", "+fmtN(Math.abs(nm.v-g.cur))+u+" away.");
+    block(title,head,reasons,ok&&idle<14);
+  });
+  // Unconfirmed scheduled workouts
+  const od=(S.sched||[]).filter(x=>Array.isArray(x.ex)&&x.date<today).sort((a,b)=>a.date<b.date?-1:1);
+  if(od.length)block("Scheduled workouts",od.length+" scheduled workout"+(od.length===1?"":"s")+" passed without being confirmed.",["The oldest was due "+fmtDate(od[0].date)+". Confirm or skip them in the Scheduled section so your log reflects what you did."],false);
+  if(!shown)W.innerHTML='<div class="muted" style="margin-top:8px">Nothing to analyze yet. Log protein, water, habits, or goal progress to see patterns here.</div>';
 }
 function exDetail(e){
   const p=[];if(e.sets)p.push(e.sets+" sets");if(e.reps)p.push(e.reps+" reps");
